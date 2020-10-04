@@ -2,30 +2,30 @@
 #include "../OJConf.h"
 using namespace std;
 int judge(judge_session *session);
-int judgeAll(judge_target *Target)
+int judgeAll(judge_target *target)
 {
     ifstream data_in;
     data_in.open(JUDGE_CONFIG);
     //TODO
     judge_data_node *d_ptr;
-    judge_session *ThisSession = new judge_session;
-    ThisSession->cpul = Target->limits->cpu;
-    ThisSession->meml = Target->limits->mem;
-    ThisSession->procl = Target->limits->proc;
-    for (size_t si = 0; si < (unsigned int)Target->data->num; si++)
+    judge_session *this_session = new judge_session;
+    this_session->cpul = target->limits->cpu;
+    this_session->meml = target->limits->mem;
+    this_session->procl = target->limits->proc;
+    for (size_t si = 0; si < (unsigned int)target->data->num; si++)
     {
         if (si == 0)
         {
-            ThisSession->data = Target->data->head_node->data;
-            judge(ThisSession);
+            this_session->data = target->data->head_node->data;
+            judge(this_session);
         }
         else
         {
-            d_ptr = Target->data->head_node;
+            d_ptr = target->data->head_node;
             for (size_t i = 0; i < si; i++)
                 d_ptr = d_ptr->next_node;
-            ThisSession->data = d_ptr->data;
-            judge(ThisSession);
+            this_session->data = d_ptr->data;
+            judge(this_session);
         }
     }
 

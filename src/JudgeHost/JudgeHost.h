@@ -10,39 +10,38 @@
 #ifndef _JUDGEHOST_H_
 #define _JUDGEHOST_H_
 typedef int judge_stat;
-struct SessionLimit
+struct session_limit
 {
-    
-    rlimit* hs;
+
+    rlimit *hs;
     int type;
 };
-struct SessionData
+struct session_data
 {
     std::string in;
     std::string out;
 };
-class JudgeSession
+class judge_session
 {
 public:
-    
-    SessionLimit* cpul;
-    SessionLimit* meml;
-    SessionLimit* procl;
-    SessionData* data;
+    session_limit *cpul;
+    session_limit *meml;
+    session_limit *procl;
+    session_data *data;
 
-    JudgeSession()
+    judge_session()
     {
-        cpul = new SessionLimit;
-        meml = new SessionLimit;
-        procl = new SessionLimit;
-        data = new SessionData;
+        cpul = new session_limit;
+        meml = new session_limit;
+        procl = new session_limit;
+        data = new session_data;
         cpul->type = RLIMIT_CPU;
         meml->type = RLIMIT_AS;
         procl->type = RLIMIT_NPROC;
         procl->hs->rlim_cur = 1;
         procl->hs->rlim_max = 1;
     }
-    ~JudgeSession()
+    ~judge_session()
     {
         delete cpul;
         delete meml;
@@ -50,12 +49,13 @@ public:
         delete data;
     }
 };
-class Stack
+class stack_256
 {
     int bp = -1;
-    void* valve[256] = {0};
+    void *valve[256] = {0};
+
 public:
-    int push(void* ptr)
+    int push(void *ptr)
     {
         if (bp <= 256)
         {
@@ -66,36 +66,36 @@ public:
         else
             return -1;
     }
-    void* pop(void)
+    void *pop()
     {
         if (bp >= 0)
         {
             bp--;
-            return valve[bp+1];
+            return valve[bp + 1];
         }
         else
             return NULL;
     }
 };
-class JudgeDataNode
+class judge_data_node
 {
 public:
-    SessionData* data;
-    JudgeDataNode* next_node = NULL;
-    JudgeDataNode(){data = new SessionData;}
-    ~JudgeDataNode(){delete data;}
-}; 
+    session_data *data;
+    judge_data_node *next_node = NULL;
+    judge_data_node() { data = new session_data; }
+    ~judge_data_node() { delete data; }
+};
 class JudgeLimits
 {
 public:
-    SessionLimit* cpu;
-    SessionLimit* mem;
-    SessionLimit* proc;
+    session_limit *cpu;
+    session_limit *mem;
+    session_limit *proc;
     JudgeLimits()
     {
-        cpu = new SessionLimit;
-        mem = new SessionLimit;
-        proc = new SessionLimit;
+        cpu = new session_limit;
+        mem = new session_limit;
+        proc = new session_limit;
     }
     ~JudgeLimits()
     {
@@ -105,47 +105,46 @@ public:
     }
 };
 
-class JudgeDataList
+class judge_data_list
 {
 public:
     int num;
-    JudgeDataNode* head_node;
-    ~JudgeDataList()
+    judge_data_node *head_node;
+    ~judge_data_list()
     {
-        Stack* __d_st = new Stack;
-        JudgeDataNode* __d_ptr = head_node;
-        while(!(__d_ptr->next_node == NULL))
+        stack_256 *d_st = new stack_256;
+        judge_data_node *d_ptr = head_node;
+        while (!(d_ptr->next_node == NULL))
         {
-            __d_st->push(__d_ptr);
-            __d_ptr = __d_ptr->next_node;
+            d_st->push(d_ptr);
+            d_ptr = d_ptr->next_node;
         }
-        delete __d_ptr;
-        __d_ptr = (JudgeDataNode*)__d_st->pop();
-        while (!(__d_ptr == NULL))
+        delete d_ptr;
+        d_ptr = (judge_data_node *)d_st->pop();
+        while (!(d_ptr == NULL))
         {
-            delete __d_ptr;
-            __d_ptr = (JudgeDataNode*)__d_st->pop();
+            delete d_ptr;
+            d_ptr = (judge_data_node *)d_st->pop();
         }
-        delete __d_st;
+        delete d_st;
     }
 };
 
-class JudgeTarget
+class judge_target
 {
 public:
-        JudgeDataList* data;
-        JudgeLimits* limits;
-        JudgeTarget()
-        {
-            data = new JudgeDataList;
-            limits = new JudgeLimits;
-        }
-        ~JudgeTarget()
-        {
-            delete data;
-            delete limits;
-        }
+    judge_data_list *data;
+    JudgeLimits *limits;
+    judge_target()
+    {
+        data = new judge_data_list;
+        limits = new JudgeLimits;
+    }
+    ~judge_target()
+    {
+        delete data;
+        delete limits;
+    }
 };
 
-
-#endif 
+#endif

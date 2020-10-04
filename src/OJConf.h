@@ -3,7 +3,7 @@
 #define SOURCE_FILE_PATH "/hoj/source"
 #define OUTPUT_FILE_PATH "/hoj/runenv/exe"
 #define CPP_COMPILER_PATH "/usr/bin/g++"
-#define CPP_COMPILER_FLAGS "-DONLINE_JUDGE","-Wall","-fno-asm","-lm","-static"
+#define CPP_COMPILER_FLAGS "-DONLINE_JUDGE", "-Wall", "-fno-asm", "-lm", "-static"
 #define CPP_EXTN ".cpp"
 #define OJ_AC int(71687767)
 #define OJ_LE int(71687768)

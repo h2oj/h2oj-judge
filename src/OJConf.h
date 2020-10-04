@@ -15,7 +15,6 @@
 #define JUDGE_CONFIG "/hoj/j.conf"
 #define JUDGE_DATA_DIR "/hoj/data.d/"
 #define JUDGE_USER_UID 1500
-#define OUTPUT_FILE_PATH "/hoj/runenv/out"
 #define OUTPUT_FILE_PATH "/hoj/runenv/exe"
 /*
 1:  MEM_HI

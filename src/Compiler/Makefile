@@ -1,2 +1,2 @@
 compiler:compiler.h compiler.cpp
-	g++ -c compiler.cpp -o ../../build/compiler.o -Wall -lm
+	g++ -c compiler.cpp -o ../../build/compiler.o -Wall -lm -std=c++17

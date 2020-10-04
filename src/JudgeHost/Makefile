@@ -1,2 +1,2 @@
-judgehost:judgehost.h judgehost.cpp ../ojconf.h
-	g++ -c judgehost.cpp -o ../../build/judgehost.o -Wall -lm
+judgehost:JudgeHost.h JudgeHost.cpp ../OJConf.h
+	g++ -c JudgeHost.cpp -o ../../build/JudgeHost.o -Wall -lm -std=c++17

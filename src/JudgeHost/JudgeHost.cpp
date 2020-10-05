@@ -39,7 +39,7 @@ int judge(judge_session *session) //单次sessionjudge
 #endif
     ofstream data_out;
     ifstream data_in;
-    data_out.open(JUDGE_IN);
+    data_out.open(JUDGE_IN); //写输入文件
     data_out << session->data->in;
     data_out.close();
 
@@ -63,9 +63,18 @@ int judge(judge_session *session) //单次sessionjudge
         wait(&end_stat);
         if (end_stat == 0) //正常退出
         {
-            data_in.open(JUDGE_OUT);
-            string program_out;
-            data_in >> program_out;
+            data_in.open(JUDGE_OUT); //读输出声音
+            string program_out = "";
+            string tmp_out = "";
+            do
+            {
+                getline(data_in, tmp_out);
+                if (tmp_out != "")
+                {
+                    tmp_out += '/n';
+                    program_out += tmp_out;
+                }
+            } while (tmp_out != "");
             if (session->data->out.compare(program_out))
                 return OJ_AC;
             else

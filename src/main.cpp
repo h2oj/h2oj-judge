@@ -1,17 +1,20 @@
 #include <iostream>
 
+#include <unistd.h>
+
 #include "run.h"
 #include "config_loader.h"
 
 int main(int argc, char *argv[]) {
-    std::cout << "====================" << std::endl;
-    std::cout << "     HOJ Judger     " << std::endl;
-    std::cout << "====================" << std::endl;
+    if (argc > 1) {
+        chdir(argv[1]);
+    }
 
     hoj::config_loader config_judger;
     config_judger.read("./judger.conf");
     hoj::config_loader config_test;
     config_test.read("./test.conf");
+    hoj::config_loader config_result;
 
     hoj::config conf;
     conf.judger_config = &config_judger;
@@ -25,12 +28,17 @@ int main(int argc, char *argv[]) {
         result = hoj::run(conf);
     }
 
-    std::cout << "Result: " << static_cast<int>(result.result) << std::endl;
-    std::cout << "CPU Time: " << result.cpu_time << "ms" << std::endl;
-    std::cout << "Real Time: " << result.real_time << "ms" << std::endl;
-    std::cout << "Memory Usage: " << result.memory << "KiB" << std::endl;
-    std::cout << "Exit Code: " << result.exit_code << std::endl;
-    std::cout << "====================" << std::endl;
+    char cwd[1024];
+    getcwd(cwd, 1024);
+    config_result.set("cwd", cwd);
     
+    config_result.set("mode", config_test.get("mode"));
+    config_result.set("result", std::to_string(static_cast<int>(result.result)));
+    config_result.set("cpu_time", std::to_string(result.cpu_time));
+    config_result.set("real_time", std::to_string(result.real_time));
+    config_result.set("memory", std::to_string(result.memory));
+    config_result.set("exit_code", std::to_string(result.exit_code));
+    config_result.write("./result.conf");
+
     return 0;
 }

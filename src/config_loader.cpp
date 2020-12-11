@@ -16,7 +16,11 @@ int config_loader::read(std::string file_path) {
 int config_loader::write(std::string file_path) {
     if (this->file.is_open()) file.close();
     this->file.open(file_path, std::ios::out | std::ios::trunc);
-    if (this->file.is_open()) this->parse();
+    if (this->file.is_open()) {
+        for (const auto &c : this->conf) {
+            this->file << c.first << "=" << c.second << std::endl;
+        }
+    }
     return this->file.is_open();
 }
 

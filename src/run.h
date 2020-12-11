@@ -1,11 +1,15 @@
+#pragma once
+
 #include <cstdint>
 #include <string>
+
+#include "config_loader.h"
 
 namespace hoj {
 
 enum class judge_status {
     SUCCESS = 0,
-    FORK_FAILED = -1
+    FORK_FAILED = -2
 };
 
 enum class judge_result {
@@ -22,11 +26,8 @@ struct config {
     int max_cpu_time;
     int max_real_time;
     int max_memory;
-    std::string program_path;
-    std::string input_path;
-    std::string output_path;
-    std::string answer_path;
-    std::string log_path;
+    config_loader *judger_config;
+    config_loader *test_config;
 };
 
 struct result {
@@ -37,7 +38,7 @@ struct result {
     judge_result result;
 };
 
-void compile(const std::string& code_path);
+result compile(const config& config);
 result run(const config& config);
 
 }

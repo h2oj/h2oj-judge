@@ -15,31 +15,7 @@
 
 namespace hoj {
 
-void compile(const std::string& code_path) {
-    auto clock_start = std::chrono::steady_clock::now();
-
-    int pid = fork();
-    if (pid < 0) {
-        
-    }
-    else if (pid == 0) {
-        execlp("g++-10", "g++-10", "src.cpp", "-o", "exe", NULL);
-        exit(0);
-    }
-    else {
-        int status;
-        rusage res_usage;
-        if (wait4(pid, &status, WSTOPPED, &res_usage) == -1) {
-            exit(-1); // TODO: require error code
-        }
-
-        auto clock_end = std::chrono::steady_clock::now();
-    }
-}
-
-result run(const config& config) {
-    std::ofstream log_file(config.log_path);
-    
+result compile(const config& config) {
     result result;
     result.cpu_time = 0;
     result.memory = 0;
@@ -49,19 +25,62 @@ result run(const config& config) {
 
     int pid = fork();
     if (pid < 0) {
-        std::cout << "fork failed" << std::endl;
+        exit(static_cast<int>(judge_status::FORK_FAILED));
+    }
+    else if (pid == 0) {
+        const std::string cpp_compiler = config.judger_config->get("cpp_compiler");
+        const std::string cpp_flag = config.judger_config->get("cpp_flag");
+        const std::string code_file = config.test_config->get("code_file");
+        const std::string exe_file = config.test_config->get("exe_file");
+        if (cpp_flag.size() > 0) {
+            execlp(cpp_compiler.c_str(), cpp_compiler.c_str(), code_file.c_str(), "-o", exe_file.c_str(), cpp_flag.c_str(), NULL);
+        }
+        else {
+            execlp(cpp_compiler.c_str(), cpp_compiler.c_str(), code_file.c_str(), "-o", exe_file.c_str(), NULL);
+        }
+        exit(0);
+    }
+    else {
+        int status;
+        rusage res_usage;
+        if (wait4(pid, &status, WSTOPPED, &res_usage) == -1) {
+            exit(-2); // TODO: require error code
+        }
+        
+        auto clock_end = std::chrono::steady_clock::now();
+
+        result.cpu_time = res_usage.ru_utime.tv_sec * 1000 + res_usage.ru_utime.tv_usec / 1000;
+        result.real_time = std::chrono::duration_cast<std::chrono::milliseconds>(clock_end - clock_start).count();
+        result.memory = res_usage.ru_maxrss;
+        result.result = judge_result::ACCEPTED;
+    }
+
+    return result;
+}
+
+result run(const config& config) {
+    result result;
+    result.cpu_time = 0;
+    result.memory = 0;
+    result.exit_code = 0;
+
+    auto clock_start = std::chrono::steady_clock::now();
+
+    int pid = fork();
+    if (pid < 0) {
         exit(static_cast<int>(judge_status::FORK_FAILED));
     }
     else if (pid == 0) {
         // TODO: setrlimit
-        int input = open(config.input_path.c_str(), O_RDONLY);
+        int input = open(config.test_config->get("input_file").c_str(), O_RDONLY);
         dup2(input, STDIN_FILENO);
-        close(STDIN_FILENO);
-        int output = open(config.output_path.c_str(), O_WRONLY | O_CREAT);
+        int output = open(config.test_config->get("output_file").c_str(), O_RDWR | O_CREAT | O_TRUNC, 0777);
         dup2(output, STDOUT_FILENO);
-        close(STDOUT_FILENO);
 
-        execl("./exe", "exe", nullptr);
+        execl(config.test_config->get("exe_file").c_str(), config.test_config->get("exe_file").c_str(), nullptr);
+
+        close(input);
+        close(output);
         exit(0);
     }
     else {
@@ -79,8 +98,8 @@ result run(const config& config) {
             result.memory = res_usage.ru_maxrss;
             result.result = judge_result::ACCEPTED;
 
-            std::ifstream judge_output(config.output_path);
-            std::ifstream judge_answer(config.answer_path);
+            std::ifstream judge_output(config.test_config->get("output_file").c_str());
+            std::ifstream judge_answer(config.test_config->get("answer_file").c_str());
             
             if (!judge_output.is_open() || !judge_answer.is_open()) {
                 result.result = judge_result::SYSTEM_ERROR;
@@ -109,6 +128,7 @@ result run(const config& config) {
         }
         else {
             result.result = judge_result::UNKNOWN_ERROR;
+            result.exit_code = errno;
         }
     }
 

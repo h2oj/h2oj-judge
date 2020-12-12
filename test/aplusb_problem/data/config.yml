@@ -1,0 +1,24 @@
+mode: oi
+spj: false
+name: aplusb
+test_points:
+  - time: 1000
+    memory: 262144
+  - time: 1000
+    memory: 262144
+  - time: 1000
+    memory: 262144
+  - time: 1000
+    memory: 262144
+  - time: 1000
+    memory: 262144
+  - time: 1000
+    memory: 262144
+  - time: 1000
+    memory: 262144
+  - time: 1000
+    memory: 262144
+  - time: 1000
+    memory: 262144
+  - time: 1000
+    memory: 262144

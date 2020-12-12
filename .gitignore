@@ -105,3 +105,12 @@ dist
 
 # Build
 build
+
+# Test
+test/*
+!test/*.in
+!test/*.cpp
+!test/*.out
+!test/*.ans
+!test/*.conf
+test/result.conf

@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const childProcess = require('child_process');
+const ConfigLoader = require('./config_loader');
 
 module.exports = function (config) {
     const judger_path = "./node/bin";
@@ -18,10 +19,10 @@ module.exports = function (config) {
         output_file: './test.out',
         answer_file: './test.ans'
     };
-    const test_config_data = Object.keys(test_config).map(key => {
-        return `${key}=${test_config[key]}`;
-    }).join('\n');
-    fs.writeFileSync(path.join(work_path, './test.conf'), test_config_data);
-    
+
+    const conf_test = new ConfigLoader;
+    conf_test.load(test_config);
+    conf_test.write(path.join(work_path, './test.conf'));
+
     childProcess.execFileSync(path.join(judger_path, 'hoj-judger'), [work_path]);
 };

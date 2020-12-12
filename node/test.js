@@ -1,5 +1,5 @@
 const hojJudger = require('./index');
 
 hojJudger({
-    work_path: './node/bin'
+    work_path: './test'
 });

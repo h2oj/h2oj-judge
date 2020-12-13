@@ -23,9 +23,6 @@ enum class judge_result {
 };
 
 struct config {
-    int max_cpu_time;
-    int max_real_time;
-    int max_memory;
     config_loader *judger_config;
     config_loader *test_config;
 };

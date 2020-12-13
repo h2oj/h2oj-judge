@@ -107,10 +107,9 @@ dist
 build
 
 # Test
-!test/**/*.in
+!test/data
 !test/**/*.cpp
-!test/**/*.out
-!test/**/*.ans
 !test/**/*.conf
 test/**/result.conf
 test/**/exe
+test/**/*.out

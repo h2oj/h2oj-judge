@@ -22,7 +22,6 @@ result compile(const config& config) {
     result.exit_code = 0;
 
     auto clock_start = std::chrono::steady_clock::now();
-
     int pid = fork();
     if (pid < 0) {
         exit(static_cast<int>(judge_status::FORK_FAILED));
@@ -76,7 +75,7 @@ result run(const config& config) {
         dup2(input, STDIN_FILENO);
         int output = open(config.test_config->get("output_file").c_str(), O_RDWR | O_CREAT | O_TRUNC, 0777);
         dup2(output, STDOUT_FILENO);
-
+        
         execl(config.test_config->get("exe_file").c_str(), config.test_config->get("exe_file").c_str(), nullptr);
 
         close(input);

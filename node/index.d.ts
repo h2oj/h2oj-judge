@@ -36,7 +36,7 @@ declare class JudgeResult {
     message: string;
 };
 
-declare async function judge(config: Config): JudgeResult;
+declare function judge(config: Config): Promise<JudgeResult>;
 
 declare module 'hoj-judger' {
     export { Config, TestPointResult, JudgeResult, JudgeStatus, judge };

@@ -27,9 +27,10 @@ const getResultMsg = result => {
 };
 
 async function judge(config) {
-    const judger_path = "./node/bin";
-    const work_path = config.work_path;
-    const judger_config = config.judger_config;
+    const judger_path = path.join(__dirname, 'bin/hoj-judger');
+    const work_path = config.work_path || '.';
+    const path_judger_config = config.judger_config || './judger.conf';
+    const data_path = config.data_path;
 
     // test config
     const test_config = {
@@ -37,12 +38,11 @@ async function judge(config) {
         spj: false,
         checker: '',
         language: 'cpp',
-        exe_file: './exe',
-        code_file: './src.cpp',
-        input_file: './test.in',
-        output_file: './test.out',
-        answer_file: './test.ans',
-        judger_config: judger_config
+        exe_file: path.join(work_path, 'exe'),
+        code_file: path.join(work_path, 'src.cpp'),
+        input_file: 'test.in',
+        output_file: 'test.out',
+        answer_file: 'test.ans'
     };
     const result = {
         language: test_config.language,
@@ -55,20 +55,23 @@ async function judge(config) {
         message: 'WAITING'
     };
 
+    const path_test_config = path.join(work_path, 'test.conf');
+    const path_result = path.join(work_path, 'result.conf');
+
     const conf_test = new ConfigLoader;
     conf_test.load(test_config);
-    conf_test.write(path.join(work_path, './test.conf'));
+    conf_test.write(path_test_config);
 
-    await childProcess.execFile(path.join(judger_path, 'hoj-judger'), [work_path]);
+    childProcess.execFileSync(judger_path, [path_judger_config, path_test_config, path_result]);
     const conf_result = new ConfigLoader;
-    conf_result.read(path.join(work_path, './result.conf'));
+    conf_result.read(path_result);
     if (Number(conf_result.get('exit_code')) !== 0 || Number(conf_result.get('result')) !== 1) {
         result.status = status.COMPILE_ERROR;
         result.message = 'COMPILE_ERROR';
         return result;
     }
 
-    const problem_config = yaml.parse(fs.readFileSync(path.join(work_path, 'data/config.yml'), { encoding: 'utf-8' }));
+    const problem_config = yaml.parse(fs.readFileSync(path.join(data_path, 'config.yml'), { encoding: 'utf-8' }));
     conf_test.set('mode', problem_config.mode);
     test_config.spj = problem_config.spj;
     if (problem_config.spj) {
@@ -77,14 +80,15 @@ async function judge(config) {
 
     for (let i = 1; i <= problem_config.test_points.length; ++i) {
         const test_point = problem_config.test_points[i - 1];
-        conf_test.set('input_file', `./data/${problem_config.name}${i}.in`);
-        conf_test.set('answer_file', `./data/${problem_config.name}${i}.out`);
+        conf_test.set('input_file', path.join(data_path, `${problem_config.name}${i}.in`));
+        conf_test.set('answer_file', path.join(data_path, `${problem_config.name}${i}.out`));
+        conf_test.set('output_file', path.join(work_path, `${problem_config.name}.out`));
         conf_test.set('time_limit', test_point.time);
         conf_test.set('memory_limit', test_point.memory);
-        conf_test.write(path.join(work_path, './test.conf'));
+        conf_test.write(path_test_config);
 
-        childProcess.execFileSync(path.join(judger_path, 'hoj-judger'), [work_path]);
-        conf_result.read(path.join(work_path, './result.conf'));
+        childProcess.execFileSync(judger_path, [path_judger_config, path_test_config, path_result]);
+        conf_result.read(path_result);
         result.test_point.push({
             time: Number(conf_result.get('real_time')),
             memory: Number(conf_result.get('memory')),

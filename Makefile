@@ -3,7 +3,7 @@ CFLAGS = -Wall -lm -std=c++17
 
 target: build/main.o build/language_cpp.o build/run.o build/config_loader.o
 	${CC} -o build/hoj-judger build/main.o build/language_cpp.o build/run.o build/config_loader.o
-	cp build/hoj-judger js/bin/hoj-judger
+	cp build/hoj-judger node/bin/hoj-judger
 
 build/main.o: src/main.cpp
 	${CC} -c src/main.cpp -o build/main.o ${CFLAGS}

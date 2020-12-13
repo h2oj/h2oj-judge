@@ -10,10 +10,12 @@ int main(int argc, char *argv[]) {
         chdir(argv[1]);
     }
 
-    hoj::config_loader config_judger;
-    config_judger.read("./judger.conf");
     hoj::config_loader config_test;
     config_test.read("./test.conf");
+
+    hoj::config_loader config_judger;
+    config_judger.read(config_test.get("./judger_config"));
+
     hoj::config_loader config_result;
 
     hoj::config conf;

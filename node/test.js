@@ -1,7 +1,8 @@
 const hojJudger = require('./index');
 
-const result = hojJudger.judge({
+hojJudger.judge({
     work_path: './test/aplusb_problem'
+}).then(result => {
+    console.log(result);
 });
 
-console.log(result);

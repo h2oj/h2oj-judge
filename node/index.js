@@ -67,7 +67,6 @@ async function judge(config) {
     }
 
     const problem_config = yaml.parse(fs.readFileSync(path.join(work_path, 'data/config.yml'), { encoding: 'utf-8' }));
-    console.log(problem_config);
     conf_test.set('mode', problem_config.mode);
     test_config.spj = problem_config.spj;
     if (problem_config.spj) {

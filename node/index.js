@@ -26,7 +26,7 @@ const getResultMsg = result => {
     }
 };
 
-module.exports = function (config) {
+async function judge(config) {
     const judger_path = "./node/bin";
     const work_path = config.work_path;
 
@@ -57,7 +57,7 @@ module.exports = function (config) {
     conf_test.load(test_config);
     conf_test.write(path.join(work_path, './test.conf'));
 
-    childProcess.execFileSync(path.join(judger_path, 'hoj-judger'), [work_path]);
+    await childProcess.execFile(path.join(judger_path, 'hoj-judger'), [work_path]);
     const conf_result = new ConfigLoader;
     conf_result.read(path.join(work_path, './result.conf'));
     if (Number(conf_result.get('exit_code')) !== 0 || Number(conf_result.get('result')) !== 1) {
@@ -105,4 +105,9 @@ module.exports = function (config) {
     }
 
     return result;
+};
+
+module.exports = {
+    JudgeStatus: status,
+    judge,
 };

@@ -29,6 +29,7 @@ const getResultMsg = result => {
 async function judge(config) {
     const judger_path = "./node/bin";
     const work_path = config.work_path;
+    const judger_config = config.judger_config;
 
     // test config
     const test_config = {
@@ -40,7 +41,8 @@ async function judge(config) {
         code_file: './src.cpp',
         input_file: './test.in',
         output_file: './test.out',
-        answer_file: './test.ans'
+        answer_file: './test.ans',
+        judger_config: judger_config
     };
     const result = {
         language: test_config.language,

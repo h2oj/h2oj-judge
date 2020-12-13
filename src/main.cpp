@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
     config_test.read("./test.conf");
 
     hoj::config_loader config_judger;
-    config_judger.read(config_test.get("./judger_config"));
+    config_judger.read(config_test.get("judger_config"));
 
     hoj::config_loader config_result;
 

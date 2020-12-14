@@ -5,6 +5,9 @@
 #include "run.h"
 #include "config_loader.h"
 
+// argv[1]: Config for judger
+// argv[2]: Config for test case
+// argv[3]: File path for outputing result
 int main(int argc, char *argv[]) {
     hoj::config_loader config_judger;
     hoj::config_loader config_test;
@@ -20,6 +23,15 @@ int main(int argc, char *argv[]) {
     conf.judger_config = &config_judger;
     conf.test_config = &config_test;
 
+    // Set work directory if config is set
+    if (config_test.get("cwd") != "") {
+        chdir(config_test.get("cwd").c_str());
+    }
+
+    // Parse mode
+    // compile: Compile file
+    // oi: Run in OI mode
+    // acm: Run in ACM mode [TODO]
     hoj::result result;
     if (config_test.get("mode") == "compile") {
         result = hoj::compile(conf);
@@ -28,6 +40,7 @@ int main(int argc, char *argv[]) {
         result = hoj::run(conf);
     }
 
+    // Print result to file
     char cwd[1024];
     getcwd(cwd, 1024);
     hoj::config_loader config_result;

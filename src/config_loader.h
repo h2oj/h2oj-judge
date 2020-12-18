@@ -2,9 +2,20 @@
 
 #include <string>
 #include <fstream>
+#include <sstream>
 #include <map>
 
 namespace hoj {
+
+template <typename T>
+T convert(std::string s) {
+    static std::stringstream ss;
+    ss.clear();
+    ss << s;
+    T res;
+    ss >> res;
+    return res;
+}
 
 class config_loader {
     std::fstream file;

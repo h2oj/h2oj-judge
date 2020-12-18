@@ -5,6 +5,7 @@
 #include <fstream>
 #include <algorithm>
 #include <chrono>
+#include <thread>
 
 #include <unistd.h>
 #include <signal.h>
@@ -71,6 +72,13 @@ result run(const config& config) {
     }
     else if (pid == 0) {
         // TODO: setrlimit
+        rlimit time_limit, memory_limit;
+        time_limit.rlim_cur = time_limit.rlim_max = convert<int>(config.test_config->get("time_limit"));
+        memory_limit.rlim_cur = memory_limit.rlim_max = convert<int>(config.test_config->get("memory_limit"));
+        setrlimit(RLIMIT_CPU, &time_limit);
+        setrlimit(RLIMIT_AS, &memory_limit);
+        std::cout << "Time Limit: " << convert<int>(config.test_config->get("time_limit")) << std::endl;
+        std::cout << "Memory Limit: " << convert<int>(config.test_config->get("memory_limit")) << std::endl;
         int input = open(config.test_config->get("input_file").c_str(), O_RDONLY);
         dup2(input, STDIN_FILENO);
         int output = open(config.test_config->get("output_file").c_str(), O_RDWR | O_CREAT | O_TRUNC, 0777);
@@ -83,18 +91,37 @@ result run(const config& config) {
         exit(0);
     }
     else {
+        result.result = judge_result::UNKNOWN_ERROR;
+
+        std::thread monitor([pid, &config, &result]() -> void {
+            const int time_limit = convert<int>(config.test_config->get("time_limit")) + 400;
+            std::this_thread::sleep_for(std::chrono::milliseconds(time_limit));
+            if (kill(pid, SIGKILL) == 0) {
+                result.result = judge_result::TIME_LIMIT_EXCEEDED;
+            }
+        });
+        monitor.detach();
+
         int status;
         rusage res_usage;
         if (wait4(pid, &status, WSTOPPED, &res_usage) == -1) {
-            exit(-1); // TODO: error code
+            //exit(-1); // TODO: error code
         }
 
         auto clock_end = std::chrono::steady_clock::now();
+        result.cpu_time = res_usage.ru_utime.tv_sec * 1000 + res_usage.ru_utime.tv_usec / 1000;
+        result.real_time = std::chrono::duration_cast<std::chrono::milliseconds>(clock_end - clock_start).count();
+        result.memory = res_usage.ru_maxrss;
+
+        if (result.memory > convert<int>(config.test_config->get("memory_limit"))) {
+            result.result = judge_result::MEMORY_LIMIT_EXCEEDED;
+        }
+
+        if (result.real_time > convert<int>(config.test_config->get("time_limit"))) {
+            result.result = judge_result::TIME_LIMIT_EXCEEDED;
+        }
 
         if (status == 0) {
-            result.cpu_time = res_usage.ru_utime.tv_sec * 1000 + res_usage.ru_utime.tv_usec / 1000;
-            result.real_time = std::chrono::duration_cast<std::chrono::milliseconds>(clock_end - clock_start).count();
-            result.memory = res_usage.ru_maxrss;
             result.result = judge_result::ACCEPTED;
 
             std::ifstream judge_output(config.test_config->get("output_file").c_str());
@@ -126,8 +153,7 @@ result run(const config& config) {
             judge_answer.close();
         }
         else {
-            result.result = judge_result::UNKNOWN_ERROR;
-            result.exit_code = errno;
+            result.exit_code = status;
         }
     }
 

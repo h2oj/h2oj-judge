@@ -6,7 +6,7 @@ def gen(file_prefix, data_id, func, opt = {}):
     print('Generated [' + file_prefix + str(data_id) + ']')
 
 def gen0(data, opt):
-    a, b = randint(0, 10**10), randint(0, 10**10)
+    a, b = randint(1, 10**10), randint(1, 10**10)
     data.input_writeln(a, b)
     data.output_writeln(a + b)
 

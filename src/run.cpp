@@ -73,8 +73,8 @@ result run(const config& config) {
     else if (pid == 0) {
         // TODO: setrlimit
         rlimit time_limit, memory_limit;
-        time_limit.rlim_cur = time_limit.rlim_max = convert<int>(config.test_config->get("time_limit"));
-        memory_limit.rlim_cur = memory_limit.rlim_max = convert<int>(config.test_config->get("memory_limit"));
+        time_limit.rlim_cur = time_limit.rlim_max = convert<int>(config.test_config->get("time_limit")) + 400;
+        memory_limit.rlim_cur = memory_limit.rlim_max = convert<int>(config.test_config->get("memory_limit")) + 200;
         setrlimit(RLIMIT_CPU, &time_limit);
         setrlimit(RLIMIT_AS, &memory_limit);
         std::cout << "Time Limit: " << convert<int>(config.test_config->get("time_limit")) << std::endl;
@@ -111,14 +111,17 @@ result run(const config& config) {
         auto clock_end = std::chrono::steady_clock::now();
         result.cpu_time = res_usage.ru_utime.tv_sec * 1000 + res_usage.ru_utime.tv_usec / 1000;
         result.real_time = std::chrono::duration_cast<std::chrono::milliseconds>(clock_end - clock_start).count();
-        result.memory = res_usage.ru_maxrss;
+        result.memory = res_usage.ru_maxrss * 1024;
+        result.exit_code = status;
 
         if (result.memory > convert<int>(config.test_config->get("memory_limit"))) {
             result.result = judge_result::MEMORY_LIMIT_EXCEEDED;
+            return result;
         }
 
         if (result.real_time > convert<int>(config.test_config->get("time_limit"))) {
             result.result = judge_result::TIME_LIMIT_EXCEEDED;
+            return result;
         }
 
         if (status == 0) {
@@ -151,9 +154,6 @@ result run(const config& config) {
 
             judge_output.close();
             judge_answer.close();
-        }
-        else {
-            result.exit_code = status;
         }
     }
 

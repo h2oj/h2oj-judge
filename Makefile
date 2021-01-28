@@ -1,4 +1,4 @@
-CC = g++-10
+CC = g++-8
 CFLAGS = -Wall -lm -std=c++17
 
 target: build/main.o build/language_cpp.o build/run.o build/config_loader.o

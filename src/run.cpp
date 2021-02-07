@@ -1,163 +1,173 @@
 #include "run.h"
 
-#include <iostream>
-#include <filesystem>
-#include <fstream>
-#include <algorithm>
+#include <cctype>
 #include <chrono>
+#include <filesystem>
+#include <map>
+#include <string>
 #include <thread>
+#include <vector>
 
-#include <unistd.h>
-#include <signal.h>
 #include <fcntl.h>
-#include <errno.h>
-#include <sys/wait.h>
+#include <signal.h>
 #include <sys/resource.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
-namespace hoj {
+#include "result.h"
+#include "util.h"
 
-result compile(const config& config) {
-    result result;
-    result.cpu_time = 0;
-    result.memory = 0;
-    result.exit_code = 0;
+namespace fs = std::filesystem;
 
-    auto clock_start = std::chrono::steady_clock::now();
-    int pid = fork();
-    if (pid < 0) {
-        exit(static_cast<int>(judge_status::FORK_FAILED));
+int hoj::compile(hoj::resource_usage &usage, const std::string &command, const fs::path &output, unsigned int time_limit, unsigned int space_limit) {
+    auto split_result = hoj::parse_command(command);
+    char **argv = new char *[split_result.size() + 1];
+    for (int i = 0; i < split_result.size(); ++i) {
+        argv[i] = const_cast<char *>(split_result[i].c_str());
     }
-    else if (pid == 0) {
-        const std::string cpp_compiler = config.judger_config->get("cpp_compiler");
-        const std::string cpp_flag = config.judger_config->get("cpp_flag");
-        const std::string code_file = config.test_config->get("code_file");
-        const std::string exe_file = config.test_config->get("exe_file");
-        if (cpp_flag.size() > 0) {
-            execlp(cpp_compiler.c_str(), cpp_compiler.c_str(), code_file.c_str(), "-o", exe_file.c_str(), cpp_flag.c_str(), NULL);
-        }
-        else {
-            execlp(cpp_compiler.c_str(), cpp_compiler.c_str(), code_file.c_str(), "-o", exe_file.c_str(), NULL);
-        }
-        exit(0);
-    }
-    else {
-        int status;
-        rusage res_usage;
-        if (wait4(pid, &status, WSTOPPED, &res_usage) == -1) {
-            exit(-2); // TODO: require error code
-        }
-        
-        auto clock_end = std::chrono::steady_clock::now();
-
-        result.cpu_time = res_usage.ru_utime.tv_sec * 1000 + res_usage.ru_utime.tv_usec / 1000;
-        result.real_time = std::chrono::duration_cast<std::chrono::milliseconds>(clock_end - clock_start).count();
-        result.memory = res_usage.ru_maxrss;
-        result.result = judge_result::ACCEPTED;
-    }
-
-    return result;
-}
-
-result run(const config& config) {
-    result result;
-    result.cpu_time = 0;
-    result.memory = 0;
-    result.exit_code = 0;
-
+    argv[split_result.size()] = nullptr;
+    
     auto clock_start = std::chrono::steady_clock::now();
 
     int pid = fork();
+    int status = 0;
     if (pid < 0) {
-        exit(static_cast<int>(judge_status::FORK_FAILED));
+        return -1;
     }
     else if (pid == 0) {
-        // TODO: setrlimit
-        rlimit time_limit, memory_limit;
-        time_limit.rlim_cur = time_limit.rlim_max = convert<int>(config.test_config->get("time_limit")) + 400;
-        memory_limit.rlim_cur = memory_limit.rlim_max = convert<int>(config.test_config->get("memory_limit")) + 200;
-        setrlimit(RLIMIT_CPU, &time_limit);
-        setrlimit(RLIMIT_AS, &memory_limit);
-        std::cout << "Time Limit: " << convert<int>(config.test_config->get("time_limit")) << std::endl;
-        std::cout << "Memory Limit: " << convert<int>(config.test_config->get("memory_limit")) << std::endl;
-        int input = open(config.test_config->get("input_file").c_str(), O_RDONLY);
-        dup2(input, STDIN_FILENO);
-        int output = open(config.test_config->get("output_file").c_str(), O_RDWR | O_CREAT | O_TRUNC, 0777);
-        dup2(output, STDOUT_FILENO);
-        
-        execl(config.test_config->get("exe_file").c_str(), config.test_config->get("exe_file").c_str(), nullptr);
+        rlimit time_rlimit, space_rlimit;
+        time_rlimit.rlim_cur = time_rlimit.rlim_max = time_limit + 200;
+        space_rlimit.rlim_cur = space_rlimit.rlim_max = space_limit + 200;
+        setrlimit(RLIMIT_CPU, &time_rlimit);
+        setrlimit(RLIMIT_AS, &space_rlimit);
 
-        close(input);
-        close(output);
-        exit(0);
+        int output_file = open(output.c_str(), O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+        dup2(output_file, STDOUT_FILENO);
+        dup2(output_file, STDERR_FILENO);
+        close(output_file);
+
+        execvp(argv[0], argv); // require error handler
     }
     else {
-        result.result = judge_result::UNKNOWN_ERROR;
-
-        std::thread monitor([pid, &config, &result]() -> void {
-            const int time_limit = convert<int>(config.test_config->get("time_limit")) + 400;
-            std::this_thread::sleep_for(std::chrono::milliseconds(time_limit));
-            if (kill(pid, SIGKILL) == 0) {
-                result.result = judge_result::TIME_LIMIT_EXCEEDED;
-            }
+        std::thread monitor([pid, time_limit]() -> void {
+            std::this_thread::sleep_for(std::chrono::milliseconds(time_limit + 200));
+            kill(pid, SIGKILL);
         });
         monitor.detach();
 
-        int status;
         rusage res_usage;
         if (wait4(pid, &status, WSTOPPED, &res_usage) == -1) {
-            //exit(-1); // TODO: error code
+            return -2;
         }
-
+        
         auto clock_end = std::chrono::steady_clock::now();
-        result.cpu_time = res_usage.ru_utime.tv_sec * 1000 + res_usage.ru_utime.tv_usec / 1000;
-        result.real_time = std::chrono::duration_cast<std::chrono::milliseconds>(clock_end - clock_start).count();
-        result.memory = res_usage.ru_maxrss * 1024;
-        result.exit_code = status;
 
-        if (result.memory > convert<int>(config.test_config->get("memory_limit"))) {
-            result.result = judge_result::MEMORY_LIMIT_EXCEEDED;
-            return result;
-        }
-
-        if (result.real_time > convert<int>(config.test_config->get("time_limit"))) {
-            result.result = judge_result::TIME_LIMIT_EXCEEDED;
-            return result;
-        }
-
-        if (status == 0) {
-            result.result = judge_result::ACCEPTED;
-
-            std::ifstream judge_output(config.test_config->get("output_file").c_str());
-            std::ifstream judge_answer(config.test_config->get("answer_file").c_str());
-            
-            if (!judge_output.is_open() || !judge_answer.is_open()) {
-                result.result = judge_result::SYSTEM_ERROR;
-            }
-
-            std::string out, ans;
-            while (!judge_answer.eof() && !judge_output.eof()) {
-                getline(judge_output, out);
-                getline(judge_answer, ans);
-
-                std::string::iterator iter_out = --out.end();
-                std::string::iterator iter_ans = --ans.end();
-                while (*iter_out == ' ' || *iter_out == '\n' || *iter_out == '\r') --iter_out;
-                while (*iter_ans == ' ' || *iter_ans == '\n' || *iter_ans == '\r') --iter_ans;
-                out = out.substr(0, distance(out.begin(), iter_out) + 1);
-                ans = ans.substr(0, distance(ans.begin(), iter_ans) + 1);
-
-                if (ans != out) {
-                    result.result = judge_result::WRONG_ANSWER;
-                    break;
-                }
-            }
-
-            judge_output.close();
-            judge_answer.close();
-        }
+        usage.cpu_time = res_usage.ru_utime.tv_sec * 1000 + res_usage.ru_utime.tv_usec / 1000;
+        usage.real_time = std::chrono::duration_cast<std::chrono::milliseconds>(clock_end - clock_start).count();
+        usage.memory = res_usage.ru_maxrss;
     }
 
-    return result;
+    return status;
 }
 
+int hoj::run(hoj::resource_usage &usage, const std::string &command, const fs::path &input, const fs::path &output, unsigned int time_limit, unsigned int space_limit) {
+    auto split_result = hoj::parse_command(command);
+    char **argv = new char *[split_result.size() + 1];
+    for (int i = 0; i < split_result.size(); ++i) {
+        argv[i] = const_cast<char *>(split_result[i].c_str());
+    }
+    argv[split_result.size()] = nullptr;
+
+    auto clock_start = std::chrono::steady_clock::now();
+
+    int pid = fork();
+    int status = 0;
+    if (pid < 0) {
+        return -1;
+    }
+    else if (pid == 0) {
+        rlimit time_rlimit, space_rlimit;
+        time_rlimit.rlim_cur = time_rlimit.rlim_max = time_limit + 200;
+        space_rlimit.rlim_cur = space_rlimit.rlim_max = space_limit + 200;
+        setrlimit(RLIMIT_CPU, &time_rlimit);
+        setrlimit(RLIMIT_AS, &space_rlimit);
+
+        int output_file = open(output.c_str(), O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+        int input_file = open(input.c_str(), O_RDONLY);
+        dup2(output_file, STDOUT_FILENO);
+        dup2(input_file, STDIN_FILENO);
+        close(output_file);
+        close(input_file);
+
+        execvp(argv[0], argv); // require error handler
+    }
+    else {
+        std::thread monitor([pid, time_limit]() -> void {
+            std::this_thread::sleep_for(std::chrono::milliseconds(time_limit + 200));
+            kill(pid, SIGKILL);
+        });
+        monitor.detach();
+
+        rusage res_usage;
+        if (wait4(pid, &status, WSTOPPED, &res_usage) == -1) {
+            return -2;
+        }
+        
+        auto clock_end = std::chrono::steady_clock::now();
+
+        usage.cpu_time = res_usage.ru_utime.tv_sec * 1000 + res_usage.ru_utime.tv_usec / 1000;
+        usage.real_time = std::chrono::duration_cast<std::chrono::milliseconds>(clock_end - clock_start).count();
+        usage.memory = res_usage.ru_maxrss;
+    }
+
+    return status;
+}
+
+int hoj::check(hoj::resource_usage &usage, const fs::path &checker, const fs::path &input, const fs::path &output, const fs::path &answer, unsigned int time_limit, unsigned int space_limit) {
+    char **argv = new char *[5];
+    argv[0] = const_cast<char *>(checker.c_str());
+    argv[1] = const_cast<char *>(input.c_str());
+    argv[2] = const_cast<char *>(output.c_str());
+    argv[3] = const_cast<char *>(answer.c_str());
+    argv[4] = nullptr;
+
+    auto clock_start = std::chrono::steady_clock::now();
+
+    int pid = fork();
+    int status = 0;
+    if (pid < 0) {
+        return -1;
+    }
+    else if (pid == 0) {
+        rlimit time_rlimit, space_rlimit;
+        time_rlimit.rlim_cur = time_rlimit.rlim_max = time_limit + 200;
+        space_rlimit.rlim_cur = space_rlimit.rlim_max = space_limit + 200;
+        setrlimit(RLIMIT_CPU, &time_rlimit);
+        setrlimit(RLIMIT_AS, &space_rlimit);
+
+        execvp(argv[0], argv); // require error handler
+    }
+    else {
+        std::thread monitor([pid, &time_limit]() -> void {
+            std::this_thread::sleep_for(std::chrono::milliseconds(time_limit + 200));
+            kill(pid, SIGKILL);
+        });
+        monitor.detach();
+
+        rusage res_usage;
+        if (wait4(pid, &status, WSTOPPED, &res_usage) == -1) {
+            return -2;
+        }
+        
+        auto clock_end = std::chrono::steady_clock::now();
+
+        usage.cpu_time = res_usage.ru_utime.tv_sec * 1000 + res_usage.ru_utime.tv_usec / 1000;
+        usage.real_time = std::chrono::duration_cast<std::chrono::milliseconds>(clock_end - clock_start).count();
+        usage.memory = res_usage.ru_maxrss;
+    }
+
+    return status;
 }

@@ -1,0 +1,26 @@
+language:
+  cpp98:
+    compile: "g++-10 %source -o %excutable -DONLINE_JUDGE -DHOJ_JUDGER"
+    run: "%excutable"
+  cpp03:
+    compile: "g++-10 %source -o %excutable -DONLINE_JUDGE -DHOJ_JUDGER -std=cpp03"
+    run: "%excutable"
+  cpp11:
+    compile: "g++-10 %source -o %excutable -DONLINE_JUDGE -DHOJ_JUDGER -std=cpp11"
+    run: "%excutable"
+  cpp14:
+    compile: "g++-10 %source -o %excutable -DONLINE_JUDGE -DHOJ_JUDGER -std=cpp14"
+    run: "%excutable"
+  cpp17:
+    compile: "g++-10 %source -o %excutable -DONLINE_JUDGE -DHOJ_JUDGER -std=cpp17"
+    run: "%excutable"
+  cpp20:
+    compile: "g++-10 %source -o %excutable -DONLINE_JUDGE -DHOJ_JUDGER -std=cpp20"
+    run: "%excutable"
+  scratch-js:
+    compiler: "hoj-scratch2js %source -o %excutable"
+    run: "node %excutable"
+  scratch-judger:
+    run: "scjudger %source"
+  nodejs:
+    run: "node %source"

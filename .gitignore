@@ -105,6 +105,10 @@ dist
 
 # Build
 build
+node/bin
+
+# VSCode Config
+.vscode
 
 # Test
 !test/data

@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -16,10 +17,12 @@ namespace fs = std::filesystem;
 int main(int argc, char *argv[]) {
     argparse::ArgumentParser parser("hoj-judger", "Judger for hydrogen oj");
     parser.add_argument("-v", "--version", "show version", false);
-    parser.add_argument("-m", "--mode", "set judge mode", true);
     parser.add_argument("-s", "--source", "set source file", true);
     parser.add_argument("-l", "--language", "set judger language", true);
     parser.add_argument("-p", "--problem", "set problem directory", true);
+    parser.add_argument("-o", "--output", "set output directory", false);
+    parser.add_argument("-c", "--checker", "set checker path", false);
+    
     parser.enable_help();
     
     auto err = parser.parse(argc, const_cast<const char **>(argv));
@@ -41,9 +44,10 @@ int main(int argc, char *argv[]) {
     fs::path problem_path = parser.get<std::string>("problem");
     fs::path problem_config_path = problem_path / "config.yml";
     fs::path source_path = parser.get<std::string>("source");
-    fs::path result_path = "./result.yml";
-    fs::path compile_log_path = "./compile.log";
-    fs::path default_checker_path = "./hoj-checker";
+    fs::path output_path = parser.exists("output") ? parser.get<std::string>("output") : ".";
+    fs::path compile_log_path = output_path / "compile.log";
+    fs::path result_path = output_path / "result.yml";
+    fs::path default_checker_path = parser.exists("checker") ? parser.get<std::string>("checker") : "./hoj-checker";
     std::string language = parser.get<std::string>("language");
 
     std::cout << "Config Path: " << judger_config_path << std::endl;
@@ -66,7 +70,7 @@ int main(int argc, char *argv[]) {
 
         std::map<std::string, std::string> data;
         data["source"] = source_path;
-        data["excutable"] = "./exe";
+        data["excutable"] = output_path / "exe";
 
         if (compile_config) {
             int max_compile_time = 10000;
@@ -162,8 +166,13 @@ int main(int argc, char *argv[]) {
 
             int test_count = problem_config["case_count"].as<int>();
             YAML::Node test_case_list = problem_config["case"];
+            result["case_count"] = test_count;
 
             int total_score = 0;
+            int total_time = 0;
+            int total_space = 0;
+
+            hoj::judge_status final_status = hoj::judge_status::ACCEPTED;
 
             for (int i = 0; i < test_count; ++i) {
                 YAML::Node test_case = test_case_list[i];
@@ -172,22 +181,31 @@ int main(int argc, char *argv[]) {
                 int score = test_case["score"].as<int>();
 
                 fs::path input = problem_path / (name + std::to_string(i + 1) + ".in");
-                fs::path output = "./res.out";
+                fs::path output = output_path / "output.out";
                 fs::path answer = problem_path / (name + std::to_string(i + 1) + ".out");
-                std::cout << "Input: " << input << std::endl;
 
                 hoj::resource_usage usage;
                 int status = hoj::run(usage, run, input, output, max_time, max_space);
                 result["case"][i]["space"] = usage.memory;
                 result["case"][i]["time"] = usage.real_time;
 
+                total_space = std::max(total_space, usage.memory);
+                total_time += usage.real_time;
+            
                 if (usage.real_time > max_time) {
                     result["case"][i]["score"] = 0;
                     result["case"][i]["status"] = static_cast<int>(hoj::test_case_status::TIME_LIMIT_EXCEEDED);
+                    final_status = hoj::judge_status::UNACCEPTED;
                 }
                 else if (usage.memory > max_space) {
                     result["case"][i]["score"] = 0;
                     result["case"][i]["status"] = static_cast<int>(hoj::test_case_status::MEMORY_LIMIT_EXCEEDED);
+                    final_status = hoj::judge_status::UNACCEPTED;
+                }
+                else if (status != 0) {
+                    result["case"][i]["score"] = 0;
+                    result["case"][i]["status"] = static_cast<int>(hoj::test_case_status::RUNTIME_ERROR);
+                    final_status = hoj::judge_status::UNACCEPTED;
                 }
                 else {
                     int status = 0;
@@ -200,6 +218,7 @@ int main(int argc, char *argv[]) {
                     }
                     else {
                         // TODO: ERR CONFIG
+                        return -3;
                     }
 
                     switch (WEXITSTATUS(status)) {
@@ -210,13 +229,15 @@ int main(int argc, char *argv[]) {
                             break;
                         }
                         case 1: { // WA
-                            result["case"][i]["score"] = score;
+                            result["case"][i]["score"] = 0;
                             result["case"][i]["status"] = static_cast<int>(hoj::test_case_status::WRONG_ANSWER);
+                            final_status = hoj::judge_status::UNACCEPTED;
                             break;
                         }
                         case 2: { // PE
                             result["case"][i]["score"] = 0;
                             result["case"][i]["status"] = static_cast<int>(hoj::test_case_status::PRESENTATION_ERROR);
+                            final_status = hoj::judge_status::UNACCEPTED;
                             break;
                         }
                         default: { // UKE
@@ -226,11 +247,22 @@ int main(int argc, char *argv[]) {
                         }
                     }
                 }
+
+                std::cout << "Test Case " << i + 1 << ": "
+                    << result["case"][i]["time"] << "ms "
+                    << result["case"][i]["space"] << "KiB "
+                    << result["case"][i]["score"] << "pts "
+                    << result["case"][i]["status"] << std::endl;
             }
 
             result["score"] = total_score;
+            result["time"] = total_time;
+            result["space"] = total_space;
+            result["status"] = static_cast<int>(final_status);
             result_file << result;
             result_file.close();
+
+            std::cout << "Judge Finished." << std::endl;
         }
         else {
             return -2;

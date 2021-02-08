@@ -1,9 +1,10 @@
-const hojJudger = require('./index');
+const HojJudger = require('./index');
 
-hojJudger.judge({
-    work_path: './test/aplusb_problem',
-    judger_config: './test/aplusb_problem/judger.conf',
-    data_path: './test/aplusb_problem/data'
+HojJudger.judge({
+    code_path: './test/aplusb_problem/src.cpp',
+    problem_path: './test/aplusb_problem/data',
+    output_path: './build/',
+    language: 'cpp98'
 }).then(result => {
     console.log(result);
 });

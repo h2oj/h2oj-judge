@@ -1,4 +1,4 @@
-#!/bash/sh
+#!/bin/sh
 
 cd ./third_party/hoj-testlib
 if [ ! -d "bin" ]; then

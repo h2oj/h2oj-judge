@@ -1,13 +1,10 @@
 #include <iostream>
-#include <thread>
+
 using namespace std;
 
 int main() {
-    //new int[1024*1024*1024];
     int a, b;
     cin >> a >> b;
-    cout << a + b << "   " << endl;
-    //while (true);
-    //this_thread::sleep_for(2s);
+    cout << a + b << endl;
     return 0;
 }

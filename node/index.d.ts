@@ -1,43 +1,54 @@
 // For typescript
 
-declare enum JudgeStatus {
-    WAITING = 0,
+declare enum TestCaseStatus {
+    NO_STATUS = 0,
     ACCEPTED = 1,
-    WRONG_ANSWER = 2,
-    TIME_LIMIT_EXCEEDED = 3,
-    MEMORY_LIMIT_EXCEEDED = 4,
-    RUNTIME_ERROR = 5,
-    SYSTEM_ERROR = 6,
-    COMPILE_ERROR = 7,
-    COMPILE_TIME_LIMIT_EXCEEDED = 8,
-    COMPILE_MEMORY_LIMIT_EXCEEDED = 9,
-    UNKNOWN_ERROR = -1
-};
+    COMPILE_ERROR = 2,
+    COMPILE_MEMORY_LIMIT_EXCEEDED = 3,
+    COMPILE_TIME_LIMIT_EXCEEDED = 4,
+    MEMORY_LIMIT_EXCEEDED = 5,
+    OUTPUT_LIMIT_EXCEEDED = 6,
+    PRESENTATION_ERROR = 7,
+    RUNTIME_ERROR = 8,
+    SYSTEM_ERROR = 9,
+    TIME_LIMIT_EXCEEDED = 10,
+    UNKNOWN_ERROR = 11,
+    WRONG_ANSWER = 12
+}
 
-declare class Config {
-    work_path: string
-};
+declare enum JudgeStatus {
+    NO_STATUS = 0,
+    ACCEPTED = 1,
+    COMPILE_ERROR = 2,
+    SYSTEM_ERROR = 3,
+    UNACCEPTED = 4,
+    UNKNOWN_ERROR = 5
+}
 
-declare class TestPointResult {
+declare class JudgerConfig {
+    code_path: string;
+    problem_path: string;
+    output_path: string;
+    language: string;
+}
+
+declare class TestCaseResult {
     time: number;
-    memory: number;
-    status: JudgeStatus;
-    message: string;
-};
+    space: number;
+    score: number;
+    status: TestCaseStatus;
+}
 
 declare class JudgeResult {
-    language: string;
-    mode: string;
-    spj: boolean;
-    test_point: TestPointResult[];
-    total_time: number;
-    total_memory: number;
+    score: number;
+    space: number;
+    time: number;
     status: JudgeStatus;
-    message: string;
-};
+    case: TestCaseResult[];
+}
 
-declare function judge(config: Config): Promise<JudgeResult>;
+declare function judge(config: JudgerConfig): Promise<JudgeResult>;
 
 declare module 'hoj-judger' {
-    export { Config, TestPointResult, JudgeResult, JudgeStatus, judge };
+    export { TestCaseResult, JudgeResult, JudgerConfig, TestCaseStatus, JudgeStatus, judge };
 };

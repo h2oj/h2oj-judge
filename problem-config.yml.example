@@ -14,21 +14,11 @@ mode: oi
 # - pretest: codeforces mode
 type: default
 
-# substack_count(number): substack count
-substack_count: 1
-
-# substack(array): detail for each substack
-substack:
-  - case_count: 1 # case count
-    # score_type(string): score type
-    # - sum:
-    # - max:
-    # - min:
-    score_type: sum
-    case: # detail for each test case
-      - max_space: 1024
-        max_time: 1000
-        score: 50
-      - max_space: 1024
-        max_time: 1000
-        score: 50
+case_count: 1 # case count
+case: # detail for each test case
+  - max_space: 1024
+    max_time: 1000
+    score: 50
+  - max_space: 1024
+    max_time: 1000
+    score: 50

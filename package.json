@@ -6,6 +6,7 @@
   "author": "Hydrogen OJ Team",
   "license": "AGPL-3.0",
   "scripts": {
+    "prepublish": "mkdir build && ./build-checker.sh && cd build && cmake .. && make && cd .. && ./copy-target.sh",
     "test": "node ./node/test.js"
   },
   "dependencies": {

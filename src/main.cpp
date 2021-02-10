@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
         return 0;
     }
     
-    fs::path judger_config_path = "./hoj-config.yml";
+    fs::path judger_config_path = "./hoj-judger-config.yml";
     fs::path problem_path = parser.get<std::string>("problem");
     fs::path problem_config_path = problem_path / "config.yml";
     fs::path source_path = parser.get<std::string>("source");

@@ -118,4 +118,4 @@ test/**/result.conf
 test/**/exe
 test/**/*.out
 
-hoj-config.yml
+hoj-judger-config.yml

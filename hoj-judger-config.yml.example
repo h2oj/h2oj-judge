@@ -17,10 +17,5 @@ language:
   cpp20:
     compile: "g++-10 %source -o %excutable -DONLINE_JUDGE -DHOJ_JUDGER -std=cpp20"
     run: "%excutable"
-  scratch-js:
-    compiler: "hoj-scratch2js %source -o %excutable"
-    run: "node %excutable"
-  scratch-judger:
-    run: "scjudger %source"
   nodejs:
     run: "node %source"

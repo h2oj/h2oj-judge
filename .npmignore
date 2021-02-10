@@ -3,3 +3,5 @@ src
 build
 .vscode
 third_party
+hoj-judger-config.yml
+

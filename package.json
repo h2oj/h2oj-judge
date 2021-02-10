@@ -6,10 +6,17 @@
   "author": "Hydrogen OJ Team",
   "license": "AGPL-3.0",
   "scripts": {
-    "prepublish": "mkdir build && ./build-checker.sh && cd build && cmake .. && make && cd .. && ./copy-target.sh",
+    "clean": "rimraf build && mkdirp build",
+    "build": "mkdirp build && cd build && cmake .. && make && cd .. && ./copy-target.sh",
+    "build:checker": "./build-checker.sh",
+    "prepublishOnly": "mkdirp build && yarn run build:checker && yarn run build",
     "test": "node ./node/test.js"
   },
   "dependencies": {
     "yaml": "^1.10.0"
+  },
+  "devDependencies": {
+    "mkdirp": "^1.0.4",
+    "rimraf": "^3.0.2"
   }
 }

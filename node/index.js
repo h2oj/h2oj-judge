@@ -28,20 +28,26 @@ const JudgeStatus = {
     UNKNOWN_ERROR: 5
 };
 
-async function judge(config) {
-    const { code_path, problem_path, output_path, language } = config;
-    const judger_path = path.join(__dirname, 'bin/hoj-judger');
-    const checker_path = path.join(__dirname, 'bin/hoj-checker');
-    childProcess.execFileSync(judger_path, [
-        '--source', code_path,
-        '--problem', problem_path,
-        '--language', language,
-        '--checker', checker_path,
-        '--output', output_path
-    ]);
-
-    const result = yaml.parse(fs.readFileSync(path.join(output_path, 'result.yml'), { encoding: 'utf-8' }));
-    return result;
+function judge(config) {
+    return new Promise((resolve, reject) => {
+        console.log('Start judge');
+    
+        const { code_path, problem_path, output_path, language } = config;
+        const judger_path = path.join(__dirname, 'bin/hoj-judger');
+        const checker_path = path.join(__dirname, 'bin/hoj-checker');
+        
+        childProcess.execFile(judger_path, [
+            '--source', code_path,
+            '--problem', problem_path,
+            '--language', language,
+            '--checker', checker_path,
+            '--output', output_path
+        ], async (error, _stdout, _stderr) => {
+            if (error) reject(error);
+            const result = yaml.parse(fs.readFileSync(path.join(output_path, 'result.yml'), { encoding: 'utf-8' }));
+            resolve(result);
+        });
+    });
 }
 
 module.exports = {

@@ -1,9 +1,20 @@
 # hoj-judger
 
-## Build && Setup
+A judger written in C++ for Hydrogen OJ.
 
-1. 确保您拥有g++-8或更高的g++编译器
-2. `make`
-3. `yarn`
-4. `yarn link`
-5. `cd ../hoj-backend && yarn link hoj-judger`
+# Install
+```bash
+yarn add hoj-judger
+```
+
+# Build
+
+Requirement: CMake
+
+```bash
+mkdir build
+./build-checker.sh
+cd build
+cmake ..
+make
+```

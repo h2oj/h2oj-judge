@@ -176,8 +176,8 @@ int main(int argc, char *argv[]) {
 
             for (int i = 0; i < test_count; ++i) {
                 YAML::Node test_case = test_case_list[i];
-                int max_time = test_case["max_time"].as<int>();
-                int max_space = test_case["max_space"].as<int>();
+                int max_time = test_case["time"].as<int>();
+                int max_space = test_case["space"].as<int>();
                 int score = test_case["score"].as<int>();
 
                 fs::path input = problem_path / (name + std::to_string(i + 1) + ".in");

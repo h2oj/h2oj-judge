@@ -3,33 +3,33 @@ mode: oi
 type: default
 case_count: 10
 case:
-  - max_space: 262144
-    max_time: 1000
+  - space: 131072
+    time: 1000
     score: 10
-  - max_space: 262144
-    max_time: 1000
+  - space: 131072
+    time: 1000
     score: 10
-  - max_space: 262144
-    max_time: 1000
+  - space: 131072
+    time: 1000
     score: 10
-  - max_space: 262144
-    max_time: 1000
+  - space: 131072
+    time: 1000
     score: 10
-  - max_space: 262144
-    max_time: 1000
+  - space: 131072
+    time: 1000
     score: 10
-  - max_space: 262144
-    max_time: 1000
+  - space: 131072
+    time: 1000
     score: 10
-  - max_space: 262144
-    max_time: 1000
+  - space: 131072
+    time: 1000
     score: 10
-  - max_space: 262144
-    max_time: 1000
+  - space: 131072
+    time: 1000
     score: 10
-  - max_space: 262144
-    max_time: 1000
+  - space: 131072
+    time: 1000
     score: 10
-  - max_space: 262144
-    max_time: 1000
+  - space: 131072
+    time: 1000
     score: 10

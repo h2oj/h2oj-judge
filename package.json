@@ -1,6 +1,6 @@
 {
   "name": "hoj-judger",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "main": "node/index.js",
   "repository": "git@github.com:hydrogen-oj/hoj-judger.git",
   "author": "Hydrogen OJ Team",
@@ -10,7 +10,7 @@
     "build": "mkdirp build && cd build && cmake .. && make && cd .. && ./copy-target.sh",
     "build:checker": "./build-checker.sh",
     "prepublishOnly": "mkdirp build && yarn run build:checker && yarn run build",
-    "test": "node ./node/test.js"
+    "test": "node ./test/test.js"
   },
   "dependencies": {
     "yaml": "^1.10.0"

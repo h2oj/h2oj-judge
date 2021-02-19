@@ -5,3 +5,7 @@ build
 third_party
 hoj-judger-config.yml
 
+test/**/*.out
+test/**/result.yml
+test/**/compile.log
+test/**/exe

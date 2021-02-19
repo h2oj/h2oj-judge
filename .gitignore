@@ -111,11 +111,9 @@ node/bin
 .vscode
 
 # Test
-!test/data
-!test/**/*.cpp
-!test/**/*.conf
-test/**/result.conf
-test/**/exe
 test/**/*.out
+test/**/result.yml
+test/**/compile.log
+test/**/exe
 
 hoj-judger-config.yml

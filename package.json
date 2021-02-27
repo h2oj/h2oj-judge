@@ -7,9 +7,8 @@
   "license": "AGPL-3.0",
   "scripts": {
     "clean": "rimraf build && mkdirp build",
-    "build": "mkdirp build && cd build && cmake .. && make && cd .. && ./copy-target.sh",
-    "build:checker": "./build-checker.sh",
-    "prepublishOnly": "mkdirp build && yarn run build:checker && yarn run build",
+    "build": "./build.sh",
+    "prepublishOnly": "./build.sh",
     "test": "node ./test/test.js"
   },
   "dependencies": {

@@ -1,21 +1,21 @@
 language:
   cpp98:
-    compile: "g++-10 %source -o %excutable -DONLINE_JUDGE -DHOJ_JUDGER"
-    run: "%excutable"
+    compile: "g++ \"%source\" -o \"%executable\" -DONLINE_JUDGE -DHOJ_JUDGER"
+    run: "\"%executable\""
   cpp03:
-    compile: "g++-10 %source -o %excutable -DONLINE_JUDGE -DHOJ_JUDGER -std=cpp03"
-    run: "%excutable"
+    compile: "g++ \"%source\" -o \"%executable\" -DONLINE_JUDGE -DHOJ_JUDGER -std=cpp03"
+    run: "\"%executable\""
   cpp11:
-    compile: "g++-10 %source -o %excutable -DONLINE_JUDGE -DHOJ_JUDGER -std=cpp11"
-    run: "%excutable"
+    compile: "g++ \"%source\" -o \"%executable\" -DONLINE_JUDGE -DHOJ_JUDGER -std=cpp11"
+    run: "\"%executable\""
   cpp14:
-    compile: "g++-10 %source -o %excutable -DONLINE_JUDGE -DHOJ_JUDGER -std=cpp14"
-    run: "%excutable"
+    compile: "g++ \"%source\" -o \"%executable\" -DONLINE_JUDGE -DHOJ_JUDGER -std=cpp14"
+    run: "\"%executable\""
   cpp17:
-    compile: "g++-10 %source -o %excutable -DONLINE_JUDGE -DHOJ_JUDGER -std=cpp17"
-    run: "%excutable"
+    compile: "g++ \"%source\" -o \"%executable\" -DONLINE_JUDGE -DHOJ_JUDGER -std=cpp17"
+    run: "\"%executable\""
   cpp20:
-    compile: "g++-10 %source -o %excutable -DONLINE_JUDGE -DHOJ_JUDGER -std=cpp20"
-    run: "%excutable"
+    compile: "g++ \"%source\" -o \"%executable\" -DONLINE_JUDGE -DHOJ_JUDGER -std=cpp20"
+    run: "\"%executable\""
   nodejs:
-    run: "node %source"
+    run: "node \"%source\""

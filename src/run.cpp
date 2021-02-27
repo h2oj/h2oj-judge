@@ -1,3 +1,22 @@
+/*
+    This file is part of the Hydrogen OJ Judger.
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published
+    by the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+/* Copyright (C) 2020-2021 Alex Cui */
+
 #include "run.h"
 
 #include <cctype>
@@ -40,7 +59,7 @@ int hoj::compile(hoj::resource_usage &usage, const std::string &command, const f
     else if (pid == 0) {
         rlimit time_rlimit, space_rlimit;
         time_rlimit.rlim_cur = time_rlimit.rlim_max = time_limit + 200;
-        space_rlimit.rlim_cur = space_rlimit.rlim_max = space_limit + 200;
+        space_rlimit.rlim_cur = space_rlimit.rlim_max = (space_limit + 200) * 1024;
         setrlimit(RLIMIT_CPU, &time_rlimit);
         setrlimit(RLIMIT_AS, &space_rlimit);
 
@@ -49,7 +68,7 @@ int hoj::compile(hoj::resource_usage &usage, const std::string &command, const f
         dup2(output_file, STDERR_FILENO);
         close(output_file);
 
-        execvp(argv[0], argv); // require error handler
+        execvp (argv[0], argv); // require error handler
     }
     else {
         std::thread monitor([pid, time_limit]() -> void {
@@ -91,7 +110,7 @@ int hoj::run(hoj::resource_usage &usage, const std::string &command, const fs::p
     else if (pid == 0) {
         rlimit time_rlimit, space_rlimit;
         time_rlimit.rlim_cur = time_rlimit.rlim_max = time_limit + 200;
-        space_rlimit.rlim_cur = space_rlimit.rlim_max = space_limit + 200;
+        space_rlimit.rlim_cur = space_rlimit.rlim_max = (space_limit + 200) * 1024;
         setrlimit(RLIMIT_CPU, &time_rlimit);
         setrlimit(RLIMIT_AS, &space_rlimit);
 
@@ -144,7 +163,7 @@ int hoj::check(hoj::resource_usage &usage, const fs::path &checker, const fs::pa
     else if (pid == 0) {
         rlimit time_rlimit, space_rlimit;
         time_rlimit.rlim_cur = time_rlimit.rlim_max = time_limit + 200;
-        space_rlimit.rlim_cur = space_rlimit.rlim_max = space_limit + 200;
+        space_rlimit.rlim_cur = space_rlimit.rlim_max = (space_limit + 200) * 1024;
         setrlimit(RLIMIT_CPU, &time_rlimit);
         setrlimit(RLIMIT_AS, &space_rlimit);
 

@@ -1,4 +1,4 @@
-const HojJudger = require('../node/index');
+const HojJudger = require('../../node/index');
 
 HojJudger.judge({
     code_path: './test/aplusb_problem/src.cpp',

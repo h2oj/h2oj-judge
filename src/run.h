@@ -25,12 +25,31 @@
 
 #include "result.h"
 
-namespace fs = std::filesystem;
-
 namespace hoj {
-    int compile(resource_usage &usage, const std::string &command, const fs::path &output, unsigned int time_limit, unsigned int space_limit);
-    int run(resource_usage &usage, const std::string &command, const fs::path &input, const fs::path &output, unsigned int time_limit, unsigned int space_limit);
-    int check(resource_usage &usage, const fs::path &checker, const fs::path &input, const fs::path &output, const fs::path &answer, unsigned int time_limit, unsigned int space_limit);
+    int compile(
+        resource_usage &usage,
+        const std::string &command,
+        const std::filesystem::path &output,
+        unsigned int time_limit,
+        unsigned int space_limit
+    );
+    int run(
+        resource_usage &usage,
+        const std::string &command,
+        const std::filesystem::path &input,
+        const std::filesystem::path &output,
+        unsigned int time_limit,
+        unsigned int space_limit
+    );
+    int check(
+        resource_usage &usage,
+        const std::filesystem::path &checker,
+        const std::filesystem::path &input,
+        const std::filesystem::path &output,
+        const std::filesystem::path &answer,
+        unsigned int time_limit,
+        unsigned int space_limit
+    );
 }
 
 #endif // _HOJ_JUDGER_RUN_H_

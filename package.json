@@ -9,7 +9,7 @@
     "clean": "rimraf build && mkdirp build",
     "build": "./build.sh",
     "prepublishOnly": "./build.sh",
-    "test": "node ./test/test.js"
+    "test": "node ./test/aplusb_problem/test.js"
   },
   "dependencies": {
     "yaml": "^1.10.0"

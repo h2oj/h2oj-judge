@@ -96,7 +96,9 @@ int main(int argc, char *argv[]) {
             int max_compile_space = 262144;
 
             std::string compile = hoj::format(compile_config.as<std::string>(), data);
+            
             std::cout << "Compile: " << compile << std::endl;
+
             hoj::resource_usage usage;
             int compile_status = hoj::compile(usage, compile, compile_log_path, max_compile_time, max_compile_space);
             

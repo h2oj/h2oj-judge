@@ -9,7 +9,7 @@ yarn add hoj-judger
 ```
 
 ## Build by Yourself
-Requirement: CMake 3.4 or higher, g++ 8 or higher
+Requirement: CMake 3.4 or higher, g++ 9 or higher
 ```bash
 ./build.sh
 ```

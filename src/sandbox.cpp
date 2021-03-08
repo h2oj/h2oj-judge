@@ -19,30 +19,56 @@
 
 #include "sandbox.h"
 
+#include <cerrno>
 #include <filesystem>
+#include <iostream>
 
 #include <fcntl.h>
 #include <sched.h>
 #include <signal.h>
+#include <sys/mount.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
-
-#include <iostream>
-#include <cerrno>
+#include "cgroup.h"
 
 namespace fs = std::filesystem;
 
 int child_process(void *arg) {
-    hoj::sandbox::sandbox_param &param = *reinterpret_cast<hoj::sandbox::sandbox_param *>(arg);
+    hoj::sandbox_param &param = *reinterpret_cast<hoj::sandbox_param *>(arg);
+
+    // Make root private
+    mount(nullptr, "/", nullptr, MS_PRIVATE | MS_REC, nullptr);
+
+    // Mount file
+    for (const auto &info : param.mount) {
+        auto target_path = param.chroot_path / info.target.relative_path();
+
+        if (!fs::exists(target_path)) {
+            fs::create_directories(target_path);
+        }
+
+        if (info.read_only) {
+            mount(
+                info.source.c_str(), target_path.c_str(),
+                nullptr, MS_BIND | MS_REC | MS_RDONLY, nullptr
+            );
+        }
+        else {
+            mount(
+                info.source.c_str(), target_path.c_str(),
+                nullptr, MS_BIND | MS_REC, nullptr
+            );
+        }
+    }
 
     // TODO: check if param.chroot_path exsits
 
-    std::clog << chroot(param.chroot_path.c_str()) << std::endl;
-    //chdir(param.work_path.c_str());
+    chroot(param.chroot_path.c_str());
+    chdir(param.work_path.c_str());
 
     // Redirect stdin, stdout, stderr
     int null_fd = open("/dev/null", O_RDWR);
@@ -54,33 +80,53 @@ int child_process(void *arg) {
     else {
         stdin_fd = null_fd;
     }
-    //dup2(stdin_fd, STDIN_FILENO);
+    if (!param.stdin_path.empty()) {
+        dup2(stdin_fd, STDIN_FILENO);
+    }
 
     if (param.redirect_stdout) {
-        stdout_fd = open(param.stdout_path.c_str(), O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+        stdout_fd = open(
+            param.stdout_path.c_str(),
+            O_WRONLY | O_TRUNC | O_CREAT,
+            S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH
+        );
     }
     else {
         stdout_fd = null_fd;
     }
-    //dup2(stdout_fd, STDOUT_FILENO);
+    if (!param.stdout_path.empty()) {
+        dup2(stdout_fd, STDOUT_FILENO);
+    }
 
     if (param.redirect_stderr) {
         if (param.stderr_path == param.stdout_path) {
             stderr_fd = stdout_fd;
         }
         else {
-            stderr_fd = open(param.stderr_path.c_str(), O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+            stderr_fd = open(
+                param.stderr_path.c_str(),
+                O_WRONLY | O_TRUNC | O_CREAT,
+                S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH
+            );
         }
     }
     else {
         stderr_fd = null_fd;
     }
-    //dup2(stderr_fd, STDERR_FILENO);
+    if (!param.stderr_path.empty()) {
+        dup2(stderr_fd, STDERR_FILENO);
+    }
 
     // Set resource limit
-    rlimit rlim_core;
+    /*rlimit rlim_core, rlim_time, rlim_memory, rlim_proc;
     rlim_core.rlim_max = rlim_core.rlim_cur = 0;
+    rlim_time.rlim_max = rlim_time.rlim_cur = param.time_limit;
+    rlim_memory.rlim_max = rlim_memory.rlim_cur = param.memory_limit;
+    rlim_proc.rlim_max = rlim_proc.rlim_cur = param.process_limit;
     setrlimit(RLIMIT_CORE, &rlim_core);
+    setrlimit(RLIMIT_CPU, &rlim_time);
+    setrlimit(RLIMIT_AS, &rlim_memory);
+    setrlimit(RLIMIT_NPROC, &rlim_proc);*/
 
     // Run command
     char **argv = new char *[param.argv.size() + 1];
@@ -93,7 +139,7 @@ int child_process(void *arg) {
     for (int i = 0; i < param.argv.size(); ++i) {
         std::clog << argv[i] << " ";
     }
-    std::clog << (argv[param.argv.size()] == nullptr) << std::endl;
+    std::clog << std::endl;
 
     execvp(argv[0], argv);
     std::clog << "ERR! execvp " << errno << std::endl;
@@ -101,21 +147,58 @@ int child_process(void *arg) {
     return -1;
 }
 
-int hoj::sandbox::start_sandbox(const hoj::sandbox::sandbox_param &param) {
+int hoj::start_sandbox(const hoj::sandbox_param &param) {
     constexpr unsigned int CHILD_STACK_SIZE = 1024 * 1024; // 1 MiB
 
     unsigned char *child_stack = new unsigned char[CHILD_STACK_SIZE];
 
-    pid_t child_pid = clone(child_process, child_stack + CHILD_STACK_SIZE,
-        //CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWPID | CLONE_NEWUTS | SIGCHLD,
-        CLONE_NEWNS | SIGCHLD,
-        const_cast<void *>(reinterpret_cast<const void *>(&param)));
-    if (child_pid == -1) std::clog << "LOG! " << child_pid << " " << errno << std::endl;
-    int status;
+    pid_t child_pid = clone(
+        child_process, child_stack + CHILD_STACK_SIZE,
+        CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWPID | CLONE_NEWUTS | SIGCHLD,
+        const_cast<void *>(reinterpret_cast<const void *>(&param))
+    );
+
+    cgroup_info info;
+    info.name = param.cgroup_name;
+    info.controller = { "cpuacct", "memory", "pids" };
+
+    if (!cgroup_initialized()) {
+        init_cgroup();
+    }
+
+    if (check_cgroup(info)) {
+        remove_cgroup(info);
+    }
+
+    create_cgroup(info);
+    write_cgroup_property(info, "memory", "memory.limit_in_bytes", param.memory_limit);
+    write_cgroup_property(info, "memory", "memory.memsw.limit_in_bytes", param.memory_limit);
+    write_cgroup_property(info, "pids", "pids.max", param.process_limit);
+    write_cgroup_property(info, "cpuacct", "tasks", child_pid);
+    write_cgroup_property(info, "memory", "tasks", child_pid);
+    write_cgroup_property(info, "pids", "tasks", child_pid);
+
+    if (child_pid == -1) {
+        std::clog << "LOG! " << child_pid << " " << errno << std::endl;
+    }
+
+    //auto clock_start = std::chrono::steady_clock::now();
+
+    int status = 0xffff;
     rusage res_usage;
     if (wait4(child_pid, &status, WSTOPPED, &res_usage) == -1) {
-        return -2;
+        return status;
     }
+
+    //auto clock_end = std::chrono::steady_clock::now();
+
+    delete[] child_stack;
+
+    // TODO: Failure handler
+    
+    //usage.cpu_time = res_usage.ru_utime.tv_sec * 1000 + res_usage.ru_utime.tv_usec / 1000;
+    //usage.real_time = std::chrono::duration_cast<std::chrono::milliseconds>(clock_end - clock_start).count();
+    //usage.memory = res_usage.ru_maxrss;
 
     return status;
 }

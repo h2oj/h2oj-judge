@@ -25,18 +25,36 @@
 #include <string>
 #include <vector>
 
-namespace hoj::sandbox {
+namespace hoj {
+    struct mount_info {
+        std::filesystem::path source;
+        std::filesystem::path target;
+        bool read_only;
+    };
+
     struct sandbox_param {
+        // cgroup name
+        std::string cgroup_name;
+        // set space limit (Byte)
         int64_t memory_limit;
+        // set time limit
+        int time_limit;
+        // set process limit
         int process_limit;
+        // chroot path
         std::filesystem::path chroot_path;
+        // working directory
         std::filesystem::path work_path;
+        // redirect io
         bool redirect_stdin;
         bool redirect_stdout;
         bool redirect_stderr;
         std::filesystem::path stdin_path;
         std::filesystem::path stdout_path;
         std::filesystem::path stderr_path;
+        // mount file
+        std::vector<mount_info> mount;
+        // run command
         std::string command;
         std::vector<std::string> argv;
     };

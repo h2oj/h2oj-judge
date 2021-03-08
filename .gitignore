@@ -110,10 +110,4 @@ node/bin
 # VSCode Config
 .vscode
 
-# Test
-test/**/*.out
-test/**/result.yml
-test/**/compile.log
-test/**/exe
-
 hoj-judger-config.yml

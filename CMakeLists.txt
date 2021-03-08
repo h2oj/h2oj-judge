@@ -13,9 +13,8 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/third_party/yaml-cpp)
 add_executable(hoj-judger ${PROJECT_SRC_FILES})
 target_link_libraries(hoj-judger yaml-cpp pthread)
 
-#add_custom_command(
-#    TARGET hoj-judger
-#    COMMAND cp ../third_party/hoj-testlib/bin/noip hoj-checker &&
-#        cp hoj-judger ../node/bin/hoj-judger &&
-#        cp hoj-checker ../node/bin/hoj-checker
-#)
+add_subdirectory(test/cgroup)
+add_subdirectory(test/sandbox)
+enable_testing()
+add_test(NAME test-cgroup COMMAND test-cgroup)
+add_test(NAME test-sandbox COMMAND test-sandbox)

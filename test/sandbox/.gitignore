@@ -1,5 +1,5 @@
 sandbox
 src_dir/*
-!src_dir/src.cpp
+!src_dir/*.cpp
 *.o
 test

@@ -6,8 +6,8 @@
 using namespace std;
 using namespace hoj;
 
-int compile() {
-    auto split_result = parse_command("g++ -o a.out src.cpp -DTEST");
+auto compile() {
+    auto split_result = parse_command("g++ -o a.out mle.cpp -DTEST");
     
     sandbox_param param {
         .cgroup_name = "hoj-test-sandbox-0",
@@ -31,12 +31,12 @@ int compile() {
     return start_sandbox(param);
 }
 
-int run() {
+auto run() {
     auto split_result = parse_command("./a.out");
     
     sandbox_param param {
         .cgroup_name = "hoj-test-sandbox-1",
-        .memory_limit = 1024 * 1024 * 1024,
+        .memory_limit = 1024 * 1024 * 128,
         .time_limit = 1000,
         .process_limit = 1,
         .chroot_path = "sandbox/rootfs",
@@ -56,8 +56,19 @@ int run() {
     return start_sandbox(param);
 }
 
+void print_result(const sandbox_result &result) {
+    cout << "status: " << result.status << endl
+        << "exit_code: " << result.exit_code << endl
+        << "signal: " << result.signal << endl
+        << "cpu_time: " << result.cpu_time << endl
+        << "real_time: " << result.real_time << endl
+        << "memory: " << result.memory << endl;
+}
+
 int main() {
-    cout << "Compile: " << compile() << endl;
-    cout << "Run: " << run() << endl;
+    cout << "Compile" << endl;
+    print_result(compile());
+    cout << "Run" << endl;
+    print_result(run());
     return 0;
 }

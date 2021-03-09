@@ -2,6 +2,18 @@
 
 The project is a tool written in C++ to judge a program for Hydrogen OJ.
 
+## Requirement
+### Kernel
+Add `swapaccount=1` to `GRUB_CMDLINE_LINUX` in `/etc/default/grub`.
+```
+GRUB_CMDLINE_LINUX="cgroup_enable=memory swapaccount=1"
+```
+
+Then run command below:
+```bash
+update-grub && reboot
+```
+
 ## Install in Node.js Project
 Requirement: Yarn
 ```bash

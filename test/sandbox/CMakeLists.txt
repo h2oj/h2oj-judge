@@ -9,3 +9,4 @@ set(PROJECT_SRC_FILES
 )
 
 add_executable(test-sandbox ${PROJECT_SRC_FILES})
+target_link_libraries(test-sandbox pthread)

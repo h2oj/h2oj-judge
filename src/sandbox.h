@@ -59,7 +59,17 @@ namespace hoj {
         std::vector<std::string> argv;
     };
 
-    int start_sandbox(const sandbox_param &param);
+    struct sandbox_result {
+        int status;
+        int exit_code;
+        int signal;
+
+        int cpu_time;
+        int real_time;
+        int memory;
+    };
+
+    sandbox_result start_sandbox(const sandbox_param &param);
 }
 
 #endif // _HOJ_JUDGER_SANDBOX_H_

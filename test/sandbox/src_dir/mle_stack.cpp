@@ -1,5 +1,4 @@
 #include <iostream>
-#include <thread>
 
 using namespace std;
 
@@ -7,6 +6,10 @@ int main() {
     long long a, b;
     cin >> a >> b;
     cout << a + b << endl;
-    this_thread::sleep_for(3s);
+
+    for (int i = 0; i < sizeof(tt) / sizeof(int); ++i) {
+        tt[i] = i;
+    }
+    cout << "Finished" << endl;
     return 0;
 }

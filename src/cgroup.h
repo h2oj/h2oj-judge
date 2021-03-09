@@ -36,7 +36,7 @@ namespace hoj {
     int remove_cgroup(const cgroup_info &info);
     int check_cgroup(const cgroup_info &info);
 
-    // Only for std::int64_t, std::string
+    // Only for std::int32_t, std::int64_t, std::string
     template <typename value_type>
     int write_cgroup_property(
         const cgroup_info &info, const std::string &controller,
@@ -44,7 +44,7 @@ namespace hoj {
         bool overwrite = true
     );
 
-    // Only for std::int64_t, std::string
+    // Only for std::int32_t, std::int64_t, std::string
     template <typename value_type>
     value_type read_cgroup_property(
         const cgroup_info &info, const std::string &controller,

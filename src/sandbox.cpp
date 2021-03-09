@@ -20,8 +20,10 @@
 #include "sandbox.h"
 
 #include <cerrno>
+#include <chrono>
 #include <filesystem>
 #include <iostream>
+#include <thread>
 
 #include <fcntl.h>
 #include <sched.h>
@@ -118,15 +120,16 @@ int child_process(void *arg) {
     }
 
     // Set resource limit
-    /*rlimit rlim_core, rlim_time, rlim_memory, rlim_proc;
-    rlim_core.rlim_max = rlim_core.rlim_cur = 0;
-    rlim_time.rlim_max = rlim_time.rlim_cur = param.time_limit;
-    rlim_memory.rlim_max = rlim_memory.rlim_cur = param.memory_limit;
-    rlim_proc.rlim_max = rlim_proc.rlim_cur = param.process_limit;
-    setrlimit(RLIMIT_CORE, &rlim_core);
-    setrlimit(RLIMIT_CPU, &rlim_time);
-    setrlimit(RLIMIT_AS, &rlim_memory);
-    setrlimit(RLIMIT_NPROC, &rlim_proc);*/
+    //rlimit rlim_core, rlim_time, rlim_memory, rlim_proc;
+    //rlim_core.rlim_max = rlim_core.rlim_cur = 0;
+    //rlim_time.rlim_max = rlim_time.rlim_cur = param.time_limit;
+    //rlim_memory.rlim_max = rlim_memory.rlim_cur = param.memory_limit;
+    //rlim_proc.rlim_max = rlim_proc.rlim_cur = param.process_limit;
+    //setrlimit(RLIMIT_CORE, &rlim_core);
+    //setrlimit(RLIMIT_CPU, &rlim_time);
+    //setrlimit(RLIMIT_AS, &rlim_memory);
+    //setrlimit(RLIMIT_STACK, &rlim_memory);
+    //setrlimit(RLIMIT_NPROC, &rlim_proc);
 
     // Run command
     char **argv = new char *[param.argv.size() + 1];
@@ -147,7 +150,7 @@ int child_process(void *arg) {
     return -1;
 }
 
-int hoj::start_sandbox(const hoj::sandbox_param &param) {
+hoj::sandbox_result hoj::start_sandbox(const hoj::sandbox_param &param) {
     constexpr unsigned int CHILD_STACK_SIZE = 1024 * 1024; // 1 MiB
 
     unsigned char *child_stack = new unsigned char[CHILD_STACK_SIZE];
@@ -158,47 +161,74 @@ int hoj::start_sandbox(const hoj::sandbox_param &param) {
         const_cast<void *>(reinterpret_cast<const void *>(&param))
     );
 
-    cgroup_info info;
-    info.name = param.cgroup_name;
-    info.controller = { "cpuacct", "memory", "pids" };
+    cgroup_info cgroup;
+    cgroup.name = param.cgroup_name;
+    cgroup.controller = { "cpuacct", "memory", "pids" };
 
     if (!cgroup_initialized()) {
         init_cgroup();
     }
 
-    if (check_cgroup(info)) {
-        remove_cgroup(info);
+    if (check_cgroup(cgroup)) {
+        remove_cgroup(cgroup);
     }
 
-    create_cgroup(info);
-    write_cgroup_property(info, "memory", "memory.limit_in_bytes", param.memory_limit);
-    write_cgroup_property(info, "memory", "memory.memsw.limit_in_bytes", param.memory_limit);
-    write_cgroup_property(info, "pids", "pids.max", param.process_limit);
-    write_cgroup_property(info, "cpuacct", "tasks", child_pid);
-    write_cgroup_property(info, "memory", "tasks", child_pid);
-    write_cgroup_property(info, "pids", "tasks", child_pid);
+    create_cgroup(cgroup);
+    write_cgroup_property(cgroup, "memory", "memory.limit_in_bytes",
+        param.memory_limit);
+    write_cgroup_property(cgroup, "memory", "memory.memsw.limit_in_bytes",
+        param.memory_limit);
+    write_cgroup_property(cgroup, "pids", "pids.max", param.process_limit);
+    write_cgroup_property(cgroup, "cpuacct", "tasks", child_pid);
+    write_cgroup_property(cgroup, "memory", "tasks", child_pid);
+    write_cgroup_property(cgroup, "pids", "tasks", child_pid);
 
     if (child_pid == -1) {
+        // TODO: error
         std::clog << "LOG! " << child_pid << " " << errno << std::endl;
     }
 
-    //auto clock_start = std::chrono::steady_clock::now();
+    auto clock_start = std::chrono::steady_clock::now();
+
+    std::thread monitor([child_pid, &param]() -> void {
+        std::this_thread::sleep_for(
+            std::chrono::milliseconds(param.time_limit + 200)
+        );
+        kill(child_pid, SIGKILL);
+    });
+    monitor.detach();
 
     int status = 0xffff;
     rusage res_usage;
     if (wait4(child_pid, &status, WSTOPPED, &res_usage) == -1) {
-        return status;
+        // TODO: error
     }
 
-    //auto clock_end = std::chrono::steady_clock::now();
+    auto clock_end = std::chrono::steady_clock::now();
 
     delete[] child_stack;
 
     // TODO: Failure handler
-    
-    //usage.cpu_time = res_usage.ru_utime.tv_sec * 1000 + res_usage.ru_utime.tv_usec / 1000;
-    //usage.real_time = std::chrono::duration_cast<std::chrono::milliseconds>(clock_end - clock_start).count();
-    //usage.memory = res_usage.ru_maxrss;
 
-    return status;
+    hoj::sandbox_result result;
+    result.status = status;
+    if (WIFEXITED(status)) {
+        result.exit_code = WEXITSTATUS(status);
+        result.signal = 0;
+    }
+    else if (WIFSIGNALED(status)) {
+        result.exit_code = -1;
+        result.signal = WTERMSIG(status);
+    }
+    result.cpu_time = read_cgroup_property<std::int64_t>(cgroup,
+        "cpuacct", "cpuacct.usage") / 1'000'000;
+    result.real_time = std::chrono::duration_cast<std::chrono::milliseconds>(
+        clock_end - clock_start).count();
+    result.memory = read_cgroup_property<std::int32_t>(cgroup,
+        "memory", "memory.memsw.max_usage_in_bytes");
+
+    std::cout << "[sandbox] memory: " << res_usage.ru_maxrss * 1024 << std::endl;
+    std::cout << "[sandbox] cpu_time: " << res_usage.ru_utime.tv_sec * 1000 + res_usage.ru_utime.tv_usec / 1000 << std::endl;
+
+    return result;
 }

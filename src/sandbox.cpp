@@ -138,12 +138,6 @@ int child_process(void *arg) {
     }
     argv[param.argv.size()] = nullptr;
 
-    std::clog << param.command.c_str() << std::endl;
-    for (int i = 0; i < param.argv.size(); ++i) {
-        std::clog << argv[i] << " ";
-    }
-    std::clog << std::endl;
-
     execvp(argv[0], argv);
     std::clog << "ERR! execvp " << errno << std::endl;
     // exec failed
@@ -229,6 +223,8 @@ hoj::sandbox_result hoj::start_sandbox(const hoj::sandbox_param &param) {
 
     std::cout << "[sandbox] memory: " << res_usage.ru_maxrss * 1024 << std::endl;
     std::cout << "[sandbox] cpu_time: " << res_usage.ru_utime.tv_sec * 1000 + res_usage.ru_utime.tv_usec / 1000 << std::endl;
+
+    remove_cgroup(cgroup);
 
     return result;
 }

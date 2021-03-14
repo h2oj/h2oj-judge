@@ -15,6 +15,8 @@ target_link_libraries(hoj-judger yaml-cpp pthread)
 
 add_subdirectory(test/cgroup)
 add_subdirectory(test/sandbox)
+add_subdirectory(test/run)
 enable_testing()
 add_test(NAME test-cgroup COMMAND test-cgroup)
 add_test(NAME test-sandbox COMMAND test-sandbox)
+add_test(NAME test-run COMMAND test-run)

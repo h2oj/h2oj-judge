@@ -46,10 +46,11 @@ namespace hoj {
         UNKNOWN_ERROR = 5
     };
 
-    struct resource_usage {
-        int cpu_time;
-        int real_time;
-        int memory;
+    // Complicated with testlib.h
+    enum class checker_status {
+        ACCEPTED = 0,
+        WRONG_ANSWER = 1,
+        PRESENTATION_ERROR = 2
     };
 }
 

@@ -29,6 +29,7 @@ namespace hoj {
     std::string format(const std::string &src, const std::map<std::string, std::string> &data);
     char transfer_char(const char &key);
     std::vector<std::string> parse_command(const std::string &command);
+    std::string random_string(int length);
 }
 
 #endif // _HOJ_JUDGER_UTIL_H_

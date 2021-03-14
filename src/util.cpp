@@ -22,6 +22,7 @@
 #include <cctype>
 #include <cstdlib>
 #include <map>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -93,4 +94,19 @@ std::vector<std::string> hoj::parse_command(const std::string &command) {
     }
     if (current_string.size() > 0) split_result.push_back(current_string);
     return split_result;
+}
+
+std::string hoj::random_string(int length) {
+    std::string result;
+    std::default_random_engine random;
+    std::uniform_int_distribution<unsigned> dist(1, 10 + 26 * 2);
+
+    for (int i = 0; i < length; ++i) {
+        auto temp = dist(random);
+        if (temp <= 10) result.push_back(temp - 1 + '0');
+        else if (temp <= 36) result.push_back(temp - 11 + 'A');
+        else result.push_back(temp - 37 + 'a');
+    }
+
+    return result;
 }

@@ -55,13 +55,14 @@ int main() {
     cout << "Real Time: " << result.real_time << endl;
     cout << "Memory: " << result.memory << endl;
     cout << "=====CHECK=====" << endl;
-    result = check(
+    result = run_checker(
         "sandbox/rootfs",
-        "data",
-        "hoj-checker",
+        "data/binary",
+        "checker",
+        "work_dir/working",
         "data/test1.in",
-        "",
         "data/test1.out",
+        "",
         1000,
         32 * 1024 * 1024
     );

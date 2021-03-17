@@ -1,5 +1,8 @@
 data/data.py
 output.out
 result.yml
-compile.log
-exe
+compile.txt
+a.out
+answer.ans
+input.in
+checker.txt

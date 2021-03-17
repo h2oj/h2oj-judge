@@ -3,33 +3,33 @@ mode: oi
 type: default
 case_count: 10
 case:
-  - space: 131072
+  - memory: 134217728
     time: 1000
     score: 10
-  - space: 131072
+  - memory: 134217728
     time: 1000
     score: 10
-  - space: 131072
+  - memory: 134217728
     time: 1000
     score: 10
-  - space: 131072
+  - memory: 134217728
     time: 1000
     score: 10
-  - space: 131072
+  - memory: 134217728
     time: 1000
     score: 10
-  - space: 131072
+  - memory: 134217728
     time: 1000
     score: 10
-  - space: 131072
+  - memory: 134217728
     time: 1000
     score: 10
-  - space: 131072
+  - memory: 134217728
     time: 1000
     score: 10
-  - space: 131072
+  - memory: 134217728
     time: 1000
     score: 10
-  - space: 131072
+  - memory: 134217728
     time: 1000
     score: 10

@@ -4,6 +4,8 @@ project(HOJ_JUDGER VERSION 0.2.3 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 11)
 
+SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb")
+
 include_directories(${PROJECT_SOURCE_DIR}/third_party)
 
 aux_source_directory(${PROJECT_SOURCE_DIR}/src PROJECT_SRC_FILES)

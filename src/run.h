@@ -62,17 +62,6 @@ namespace hoj {
         int space_limit
     );
 
-    sandbox_result compile_checker(
-        const std::filesystem::path &sandbox_directory,
-        const std::filesystem::path &source_directory,
-        const std::string &source_name,
-        const std::filesystem::path &binary_directory,
-        const std::string &binary_name,
-        const std::string &command,
-        int time_limit,
-        int space_limit
-    );
-
     /*
      * Function: run
      * Description: Run in sandbox.
@@ -100,30 +89,26 @@ namespace hoj {
         int space_limit
     );
 
-    /*
-     * Function: check
-     * Description: Check the answer file.
-     * Params:
-     *   sandbox_path[const std::filesystem::path &]: Path to sandbox.
-     *   work_path[const std::filesystem::path &]: Path to work directory.
-     *   command[const std::string &]: Command to run.
-     *   checker[const std::filesystem::path &]: Checker path.
-     *   input[const std::filesystem::path &]: Input file path.
-     *   output[const std::filesystem::path &]: Output file path.
-     *   answer[const std::filesystem::path &]: Answer file path.
-     *   time_limit[int]: Time limit. (ms)
-     *   space_limit[int]: Space limit. (Byte)
-     * Return[hoj::sandbox_result]: The result of sandbox.
-     */
-    sandbox_result check(
-        const std::filesystem::path &sandbox_path,
-        const std::filesystem::path &work_path,
-        const std::filesystem::path &checker,
-        const std::filesystem::path &input,
-        const std::filesystem::path &output,
-        const std::filesystem::path &answer,
+    sandbox_result compile_checker(
+        const std::filesystem::path &sandbox_directory,
+        const std::filesystem::path &source_directory,
+        const std::string &source_name,
+        const std::filesystem::path &binary_directory,
+        const std::string &binary_name,
+        const std::string &command,
         int time_limit,
         int space_limit
+    );
+
+    sandbox_result run_checker(
+        const std::filesystem::path &sandbox_directory,
+        const std::filesystem::path &checker_directory,
+        const std::string &checker_name,
+        const std::filesystem::path &working_directory,
+        const std::filesystem::path &input_path,
+        const std::filesystem::path &answer_path,
+        const std::string &command,
+        int time_limit, int space_limit
     );
 }
 

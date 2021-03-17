@@ -29,25 +29,72 @@
 
 #include "result.h"
 #include "run.h"
+#include "sandbox.h"
 #include "util.h"
 
 namespace fs = std::filesystem;
 
+static void fill_testcase_status(
+    YAML::Node &result, int testcase_count,
+    int memory, int time, int score, hoj::test_case_status status
+) {
+    result["case_count"] = testcase_count;
+    for (int i = 0; i < testcase_count; ++i) {
+        result["case"][i]["memory"] = memory;
+        result["case"][i]["time"] = time;
+        result["case"][i]["score"] = score;
+        result["case"][i]["status"] = status;
+    }
+}
+
+static std::string read_file(std::ifstream &fin) {
+    std::string result, temp;
+    while (!fin.eof()) {
+        getline(fin, temp);
+        temp.push_back('\n');
+        result += temp;
+    }
+    return result;
+}
+
+static void save_result(const YAML::Node &result, std::ofstream &fout) {
+    fout << result;
+    fout.close();
+}
+
+template<>
+class YAML::convert<hoj::test_case_status> {
+public:
+    static inline Node encode(const hoj::test_case_status &status) {
+        return YAML::convert<int>::encode(static_cast<int>(status));
+    }
+};
+
+template<>
+class YAML::convert<hoj::judge_status> {
+public:
+    static inline Node encode(const hoj::judge_status &status) {
+        return YAML::convert<int>::encode(static_cast<int>(status));
+    }
+};
+
 int main(int argc, char *argv[]) {
     argparse::ArgumentParser parser("hoj-judger", "Judger for hydrogen oj");
     parser.add_argument("-v", "--version", "show version", false);
-    parser.add_argument("-s", "--source", "set source file", true);
-    parser.add_argument("-l", "--language", "set judger language", true);
+    parser.add_argument("-s", "--sandbox", "set sandbox root path", true);
+    parser.add_argument("-w", "--workdir", "set working directory", true);
     parser.add_argument("-p", "--problem", "set problem directory", true);
-    parser.add_argument("-o", "--output", "set output directory", false);
+    parser.add_argument("-l", "--language", "set judger language", true);
+    parser.add_argument("-n", "--srcname", "set source file name", true);
     parser.add_argument("-c", "--checker", "set checker path", false);
+    //parser.add_argument("-r", "--recompile-checker", "set checker path", false);
     
     parser.enable_help();
     
     auto err = parser.parse(argc, const_cast<const char **>(argv));
     if (err) {
         if (parser.exists("version")) {
-            std::cout << "v0.2.0" << std::endl;
+            std::cout << "v0.3.0" << std::endl;
             return 0;
         }
         std::cout << err << std::endl;
@@ -58,24 +105,25 @@ int main(int argc, char *argv[]) {
         parser.print_help();
         return 0;
     }
-    
-    fs::path judger_config_path = "./hoj-judger-config.yml";
-    fs::path problem_path = parser.get<std::string>("problem");
-    fs::path problem_config_path = problem_path / "config.yml";
-    fs::path source_path = parser.get<std::string>("source");
-    fs::path output_path = parser.exists("output") ? parser.get<std::string>("output") : ".";
-    fs::path compile_log_path = output_path / "compile.log";
-    fs::path result_path = output_path / "result.yml";
-    fs::path default_checker_path = parser.exists("checker") ? parser.get<std::string>("checker") : "./hoj-checker";
-    std::string language = parser.get<std::string>("language");
 
-    std::cout << "Config Path: " << judger_config_path << std::endl;
-    std::cout << "Problem Directory: " << problem_config_path << std::endl;
-    std::cout << "Language: " << language << std::endl;
+    const fs::path judger_config_path = "./hoj-judger-config.yml";
+    const fs::path problem_path = parser.get<std::string>("problem");
+    const fs::path problem_config_path = problem_path / "config.yml";
+    const fs::path work_path = parser.get<std::string>("workdir");
+    const fs::path source_directory = work_path / "source";
+    const fs::path binary_directory = work_path / "binary";
+    const fs::path working_directory = work_path / "working";
+    const fs::path result_path = working_directory / "result.yml";
+    const fs::path sandbox_directory = parser.get<std::string>("sandbox");
+    const std::string language = parser.get<std::string>("language");
+    const std::string source_name = parser.get<std::string>("srcname");
+    const fs::path checker_path = parser.get<std::string>("checker");
+    const fs::path checker_directory = checker_path.parent_path();
+    const std::string checker_name = checker_path.filename();
 
     YAML::Node judger_config = YAML::LoadFile(judger_config_path);
     YAML::Node problem_config = YAML::LoadFile(problem_config_path);
-    YAML::Node result;
+    YAML::Node judge_result;
 
     std::ofstream result_file(result_path);
     if (!result_file.is_open()) {
@@ -83,211 +131,235 @@ int main(int argc, char *argv[]) {
     }
 
     YAML::Node language_config = judger_config["language"][language];
-    if (language_config) {
-        YAML::Node compile_config = language_config["compile"];
-        YAML::Node run_config = language_config["run"];
+    if (!language_config) {
+        // TODO: error
+        std::cerr << "No such language in config." << std::endl
+            << "Language: " << language << std::endl;
+        return -1;
+    }
 
-        std::map<std::string, std::string> data;
-        data["source"] = source_path;
-        data["executable"] = output_path / "exe";
+    YAML::Node compile_config = language_config["compile"];
+    YAML::Node run_config = language_config["run"];
 
-        if (compile_config) {
-            int max_compile_time = 10000;
-            int max_compile_space = 262144;
+    if (compile_config) {
+        constexpr int max_compile_time = 5000;
+        constexpr int max_compile_memory = 1024 * 1024 * 1024;
 
-            std::string compile = hoj::format(compile_config.as<std::string>(), data);
-            
-            std::cout << "Compile: " << compile << std::endl;
+        std::string compile_command = compile_config.as<std::string>();
 
-            hoj::resource_usage usage;
-            int compile_status = hoj::compile(usage, compile, compile_log_path, max_compile_time, max_compile_space);
-            
-            if (usage.real_time > max_compile_time) { // CTLE
-                result["status"] = static_cast<int>(hoj::judge_status::COMPILE_ERROR);
-                result["space"] = 0;
-                result["time"] = 0;
-                result["score"] = 0;
+        hoj::sandbox_result result = hoj::compile(
+            sandbox_directory,
+            work_path,
+            compile_command,
+            source_name,
+            "a.out",
+            max_compile_time,
+            max_compile_memory
+        );
 
-                int test_count = problem_config["case_count"].as<int>();
-                result["case_count"] = test_count;
-                for (int i = 0; i < test_count; ++i) {
-                    result["case"][i]["space"] = 0;
-                    result["case"][i]["time"] = 0;
-                    result["case"][i]["score"] = 0;
-                    result["case"][i]["status"] = static_cast<int>(hoj::test_case_status::COMPILE_TIME_LIMIT_EXCEEDED);
-                }
+        judge_result["compile_time"] = result.real_time;
+        judge_result["compile_memory"] = result.memory;
 
-                result_file << result;
-                result_file.close();
-                return 0;
-            }
-            else if (usage.memory > max_compile_space) { // CMLE
-                result["status"] = static_cast<int>(hoj::judge_status::COMPILE_ERROR);
+        // has signal
+        if (result.signal) { // UKE
+            judge_result["detail"] = "Signal " + std::to_string(result.signal);
+            judge_result["status"] = hoj::judge_status::UNKNOWN_ERROR;
+            int case_count = problem_config["case_count"].as<int>();
+            fill_testcase_status(
+                judge_result, case_count, 0, 0, 0,
+                hoj::test_case_status::UNKNOWN_ERROR
+            );
 
-                int test_count = problem_config["case_count"].as<int>();
-                result["case_count"] = test_count;
-                for (int i = 0; i < test_count; ++i) {
-                    result["case"][i]["space"] = 0;
-                    result["case"][i]["time"] = 0;
-                    result["case"][i]["score"] = 0;
-                    result["case"][i]["status"] = static_cast<int>(hoj::test_case_status::COMPILE_MEMORY_LIMIT_EXCEEDED);
-                }
-
-                result_file << result;
-                result_file.close();
-                return 0;
-            }
-            else if (compile_status != 0) { // CE
-                std::ifstream compile_log(compile_log_path);
-                if (!compile_log.is_open()) { // UKE
-                    result["status"] = static_cast<int>(hoj::judge_status::UNKNOWN_ERROR);
-                    int test_count = problem_config["case_count"].as<int>();
-                    result["case_count"] = test_count;
-                    for (int i = 0; i < test_count; ++i) {
-                        result["case"][i]["space"] = 0;
-                        result["case"][i]["time"] = 0;
-                        result["case"][i]["score"] = 0;
-                        result["case"][i]["status"] = static_cast<int>(hoj::test_case_status::UNKNOWN_ERROR);
-                    }
-                    return 0;
-                }
-                
-                std::string compile_detail, temp;
-                while (!compile_log.eof()) {
-                    getline(compile_log, temp);
-                    temp.push_back('\n');
-                    compile_detail += temp;
-                }
-
-                result["info"] = compile_detail;
-                result["status"] = static_cast<int>(hoj::judge_status::COMPILE_ERROR);
-                
-                int test_count = problem_config["case_count"].as<int>();
-                result["case_count"] = test_count;
-                for (int i = 0; i < test_count; ++i) {
-                    result["case"][i]["space"] = 0;
-                    result["case"][i]["time"] = 0;
-                    result["case"][i]["score"] = 0;
-                    result["case"][i]["status"] = static_cast<int>(hoj::test_case_status::COMPILE_ERROR);
-                }
-
-                result_file << result;
-                result_file.close();
-                return 0;
-            }
+            save_result(judge_result, result_file);
+            return 0;
         }
+        // CTLE
+        else if (result.real_time > max_compile_time) {
+            judge_result["status"] = hoj::judge_status::COMPILE_ERROR;
 
-        if (run_config) {
-            std::string run = hoj::format(run_config.as<std::string>(), data);
-            std::cout << "Run: " << run << std::endl;
+            int case_count = problem_config["case_count"].as<int>();
+            fill_testcase_status(
+                judge_result, case_count, 0, 0, 0,
+                hoj::test_case_status::COMPILE_MEMORY_LIMIT_EXCEEDED
+            );
+
+            save_result(judge_result, result_file);
+            return 0;
+        }
+        // CMLE
+        else if (result.memory > max_compile_memory) {
+            judge_result["status"] = hoj::judge_status::COMPILE_ERROR;
+
+            int case_count = problem_config["case_count"].as<int>();
+            fill_testcase_status(
+                judge_result, case_count, 0, 0, 0,
+                hoj::test_case_status::COMPILE_TIME_LIMIT_EXCEEDED
+            );
+
+            save_result(judge_result, result_file);
+            return 0;
+        }
+        // CE
+        else if (result.exit_code != 0) {
+            std::ifstream compile_log(working_directory / "compile.txt");
+
+            if (!compile_log.is_open()) { // SE
+                judge_result["status"] = hoj::judge_status::SYSTEM_ERROR;
+                judge_result["detail"] = "Failed to open compile log.";
+                int case_count = problem_config["case_count"].as<int>();
+                fill_testcase_status(
+                    judge_result, case_count, 0, 0, 0,
+                    hoj::test_case_status::SYSTEM_ERROR
+                );
+
+                save_result(judge_result, result_file);
+                return 0;
+            }
             
-            std::string name = problem_config["file"].as<std::string>();
-            std::string mode = problem_config["mode"].as<std::string>();
-            std::string type = problem_config["type"].as<std::string>();
+            std::string compile_detail = read_file(compile_log);
 
-            int test_count = problem_config["case_count"].as<int>();
-            YAML::Node test_case_list = problem_config["case"];
-            result["case_count"] = test_count;
+            judge_result["detail"] = compile_detail;
+            judge_result["status"] = hoj::judge_status::COMPILE_ERROR;
+            int case_count = problem_config["case_count"].as<int>();
+            fill_testcase_status(
+                judge_result, case_count, 0, 0, 0,
+                hoj::test_case_status::COMPILE_ERROR
+            );
 
-            int total_score = 0;
-            int total_time = 0;
-            int total_space = 0;
+            save_result(judge_result, result_file);
+            return 0;
+        }
+    }
 
-            hoj::judge_status final_status = hoj::judge_status::ACCEPTED;
+    if (run_config) {
+        std::string run_command = run_config.as<std::string>();
+        
+        std::string file_prefix = problem_config["file"].as<std::string>();
+        std::string judge_mode = problem_config["mode"].as<std::string>();
+        std::string checker_type = problem_config["type"].as<std::string>();
 
-            for (int i = 0; i < test_count; ++i) {
-                YAML::Node test_case = test_case_list[i];
-                int max_time = test_case["time"].as<int>();
-                int max_space = test_case["space"].as<int>();
-                int score = test_case["score"].as<int>();
+        int testcase_count = problem_config["case_count"].as<int>();
+        YAML::Node testcase_list = problem_config["case"];
+        judge_result["case_count"] = testcase_count;
 
-                fs::path input = problem_path / (name + std::to_string(i + 1) + ".in");
-                fs::path output = output_path / "output.out";
-                fs::path answer = problem_path / (name + std::to_string(i + 1) + ".out");
+        int total_score = 0;
+        int total_time = 0;
+        int total_memory = 0;
+        hoj::judge_status final_status = hoj::judge_status::ACCEPTED;
 
-                hoj::resource_usage usage;
-                int status = hoj::run(usage, run, input, output, max_time, max_space);
-                result["case"][i]["space"] = usage.memory;
-                result["case"][i]["time"] = usage.real_time;
+        for (int i = 0; i < testcase_count; ++i) {
+            YAML::Node testcase = testcase_list[i];
+            int max_time = testcase["time"].as<int>();
+            int max_memory = testcase["memory"].as<int>();
+            int score = testcase["score"].as<int>();
 
-                total_space = std::max(total_space, usage.memory);
-                total_time += usage.real_time;
-            
-                if (usage.real_time > max_time) {
-                    result["case"][i]["score"] = 0;
-                    result["case"][i]["status"] = static_cast<int>(hoj::test_case_status::TIME_LIMIT_EXCEEDED);
-                    final_status = hoj::judge_status::UNACCEPTED;
-                }
-                else if (usage.memory > max_space) {
-                    result["case"][i]["score"] = 0;
-                    result["case"][i]["status"] = static_cast<int>(hoj::test_case_status::MEMORY_LIMIT_EXCEEDED);
-                    final_status = hoj::judge_status::UNACCEPTED;
-                }
-                else if (status != 0) {
-                    result["case"][i]["score"] = 0;
-                    result["case"][i]["status"] = static_cast<int>(hoj::test_case_status::RUNTIME_ERROR);
+            std::string filename = file_prefix + std::to_string(i + 1);
+            fs::path input_file = problem_path / (filename + ".in");
+            fs::path output_file = working_directory / "output.out";
+            fs::path answer_file = problem_path / (filename + ".out");
+
+            hoj::sandbox_result result = hoj::run(
+                sandbox_directory,
+                work_path,
+                run_command,
+                source_name,
+                "a.out",
+                input_file,
+                output_file,
+                max_time,
+                max_memory
+            );
+
+            judge_result["case"][i]["time"] = result.real_time;
+            judge_result["case"][i]["memory"] = result.memory;
+
+            total_memory = std::max(total_memory, result.memory);
+            total_time += result.real_time;
+
+            // has signal, UKE
+            if (result.signal) {
+                judge_result["case"][i]["detail"] = "Signal " + std::to_string(result.signal);
+                judge_result["case"][i]["score"] = 0;
+                judge_result["case"][i]["status"] = hoj::judge_status::UNKNOWN_ERROR;
+                final_status = hoj::judge_status::UNACCEPTED;
+            }
+            // TLE
+            else if (result.real_time > max_time) {
+                judge_result["case"][i]["score"] = 0;
+                judge_result["case"][i]["status"] = hoj::test_case_status::TIME_LIMIT_EXCEEDED;
+                final_status = hoj::judge_status::UNACCEPTED;
+            }
+            // MLE
+            else if (result.memory > max_memory) {
+                judge_result["case"][i]["score"] = 0;
+                judge_result["case"][i]["status"] = hoj::test_case_status::MEMORY_LIMIT_EXCEEDED;
+                final_status = hoj::judge_status::UNACCEPTED;
+            }
+            // RE
+            else if (result.exit_code != 0) {
+                judge_result["case"][i]["score"] = 0;
+                judge_result["case"][i]["status"] = hoj::test_case_status::RUNTIME_ERROR;
+                final_status = hoj::judge_status::UNACCEPTED;
+            }
+            else {
+                // Run checker
+                constexpr int max_checker_time = 1000;
+                constexpr int max_checker_memory = 1024 * 1024 * 1024;
+
+                hoj::sandbox_result checker_result = hoj::run_checker(
+                    sandbox_directory,
+                    checker_directory,
+                    checker_name,
+                    working_directory,
+                    input_file,
+                    answer_file,
+                    "",
+                    max_time,
+                    max_memory
+                );
+
+                if (checker_result.signal) {
+                    judge_result["case"][i]["detail"] = "Signal " + std::to_string(result.signal);
+                    judge_result["case"][i]["score"] = 0;
+                    judge_result["case"][i]["status"] = hoj::judge_status::UNKNOWN_ERROR;
                     final_status = hoj::judge_status::UNACCEPTED;
                 }
                 else {
-                    int status = 0;
-                    if (type == "default") {
-                        hoj::resource_usage usage;
-                        status = hoj::check(usage, default_checker_path, input, output, answer, 1000, 1000000); // TODO LIMIT
-                    }
-                    else if (type == "spj") {
-                        // TODO: SPJ
-                    }
-                    else {
-                        // TODO: ERR CONFIG
-                        return -3;
-                    }
-
-                    switch (WEXITSTATUS(status)) {
-                        case 0: { // AC
-                            result["case"][i]["score"] = score;
-                            result["case"][i]["status"] = static_cast<int>(hoj::test_case_status::ACCEPTED);
+                    switch (checker_result.exit_code) {
+                        case static_cast<int>(hoj::checker_status::ACCEPTED): { // AC
+                            judge_result["case"][i]["score"] = score;
+                            judge_result["case"][i]["status"] = hoj::test_case_status::ACCEPTED;
                             total_score += score;
                             break;
                         }
-                        case 1: { // WA
-                            result["case"][i]["score"] = 0;
-                            result["case"][i]["status"] = static_cast<int>(hoj::test_case_status::WRONG_ANSWER);
+                        case static_cast<int>(hoj::checker_status::WRONG_ANSWER): { // WA
+                            judge_result["case"][i]["score"] = 0;
+                            judge_result["case"][i]["status"] = hoj::test_case_status::WRONG_ANSWER;
                             final_status = hoj::judge_status::UNACCEPTED;
                             break;
                         }
-                        case 2: { // PE
-                            result["case"][i]["score"] = 0;
-                            result["case"][i]["status"] = static_cast<int>(hoj::test_case_status::PRESENTATION_ERROR);
+                        case static_cast<int>(hoj::checker_status::PRESENTATION_ERROR): { // PE
+                            judge_result["case"][i]["score"] = 0;
+                            judge_result["case"][i]["status"] = hoj::test_case_status::PRESENTATION_ERROR;
                             final_status = hoj::judge_status::UNACCEPTED;
                             break;
                         }
                         default: { // UKE
-                            result["case"][i]["score"] = 0;
-                            result["case"][i]["status"] = static_cast<int>(hoj::test_case_status::UNKNOWN_ERROR);
+                            judge_result["case"][i]["score"] = 0;
+                            judge_result["case"][i]["status"] = hoj::test_case_status::UNKNOWN_ERROR;
                             break;
                         }
                     }
                 }
-
-                std::cout << "Test Case " << i + 1 << ": "
-                    << result["case"][i]["time"] << "ms "
-                    << result["case"][i]["space"] << "KiB "
-                    << result["case"][i]["score"] << "pts "
-                    << result["case"][i]["status"] << std::endl;
             }
-
-            result["score"] = total_score;
-            result["time"] = total_time;
-            result["space"] = total_space;
-            result["status"] = static_cast<int>(final_status);
-            result_file << result;
-            result_file.close();
-
-            std::cout << "Judge Finished." << std::endl;
         }
-        else {
-            return -2;
-        }
+
+        judge_result["score"] = total_score;
+        judge_result["time"] = total_time;
+        judge_result["memory"] = total_memory;
+        judge_result["status"] = final_status;
+        
+        save_result(judge_result, result_file);
     }
 
     return 0;

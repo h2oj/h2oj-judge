@@ -98,12 +98,12 @@ hoj::sandbox_result hoj::compile_checker(
     param.chroot_path = sandbox_directory;
     param.work_path = "/sandbox";
     param.redirect_stdin = false;
-    param.redirect_stdout = false;
-    param.redirect_stderr = false;
-    //param.stdout_path = "binary/compile.txt";
-    //param.stderr_path = "binary/compile.txt";
+    param.redirect_stdout = true;
+    param.redirect_stderr = true;
+    param.stdout_path = "binary/compile.txt";
+    param.stderr_path = "binary/compile.txt";
     param.mount = {
-        { source_directory, "sandbox/source", false },
+        { source_directory, "sandbox/source", true },
         { binary_directory, "sandbox/binary", false }
     };
     param.command = parsed_cmd[0];
@@ -157,19 +157,10 @@ hoj::sandbox_result hoj::run(
 hoj::sandbox_result hoj::run_checker(
     const fs::path &sandbox_directory,
     const fs::path &checker_directory, const std::string &checker_name,
+    const fs::path &working_directory,
     const fs::path &input_path,
-    const fs::path &output_path,
-    const fs::path &answer_path
-    const std::string &command,
-    int time_limit, int space_limit
-) {
-
-}
-
-hoj::sandbox_result hoj::check(
-    const fs::path &sandbox_path, const fs::path &work_path,
-    const fs::path &checker,
-    const fs::path &input, const fs::path &output, const fs::path &answer,
+    const fs::path &answer_path,
+    [[maybe_unused]] const std::string &command,
     int time_limit, int space_limit
 ) {
     hoj::sandbox_param param;
@@ -177,30 +168,29 @@ hoj::sandbox_result hoj::check(
     param.memory_limit = space_limit;
     param.time_limit = time_limit;
     param.process_limit = 1;
-    param.chroot_path = sandbox_path;
+    param.chroot_path = sandbox_directory;
     param.work_path = "/sandbox";
     param.redirect_stdin = false;
     param.redirect_stdout = true;
-    param.redirect_stderr = false;
+    param.redirect_stderr = true;
     param.stdout_path = "working/checker.txt";
+    param.stderr_path = "working/checker.txt";
     param.mount = {
-        { work_path / "source", "sandbox/source", true },
-        { work_path / "binary", "sandbox/binary", false },
-        { work_path / "working", "sandbox/working", false }
+        { checker_directory, "sandbox/binary", true },
+        { working_directory, "sandbox/working", false }
     };
-    param.command = checker;
+    param.command = fs::path("binary") / checker_name;
     param.argv = {
-        checker,
+        fs::path("binary") / checker_name,
         "working/input.in", "working/output.out", "working/answer.ans"
     };
     
-    // Copy input and answer file
     fs::copy_file(
-        input, work_path / "working" / "input.in",
+        input_path, working_directory / "input.in",
         fs::copy_options::overwrite_existing
     );
     fs::copy_file(
-        answer, work_path / "working" / "answer.ans",
+        answer_path, working_directory / "answer.ans",
         fs::copy_options::overwrite_existing
     );
 

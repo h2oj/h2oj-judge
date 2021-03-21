@@ -100,7 +100,7 @@ int judge_program(argparse::ArgumentParser &parser) {
     const fs::path source_directory = work_path / "source";
     const fs::path binary_directory = work_path / "binary";
     const fs::path working_directory = work_path / "working";
-    const fs::path result_path = working_directory / "result.yml";
+    const fs::path result_path = work_path / "result.yml";
     const fs::path sandbox_directory = parser.get<std::string>("sandbox");
     const std::string language = parser.get<std::string>("type");
     const std::string source_name = parser.get<std::string>("source");
@@ -402,7 +402,7 @@ int compile_checker(argparse::ArgumentParser &parser) {
         // has signal
         if (result.signal) { // UKE
             compile_result["detail"] = "Signal " + std::to_string(result.signal);
-            compile_result["status"] = hoj::test_case_status::UNKNOWN_ERROR;
+            compile_result["status"] = hoj::judge_status::UNKNOWN_ERROR;
         }
         // CTLE
         else if (result.real_time > max_compile_time) {

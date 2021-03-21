@@ -49,21 +49,38 @@ const JudgeStatus = {
 
 function judge(config) {
     return new Promise((resolve, reject) => {
-        console.log('Start judge');
-    
-        const { code_path, problem_path, output_path, language } = config;
-        const judger_path = path.join(__dirname, 'bin/hoj-judger');
-        const checker_path = path.join(__dirname, 'bin/hoj-checker');
+        const judgerPath = path.join(__dirname, 'bin/hoj-judger');
         
-        childProcess.execFile(judger_path, [
-            '--source', code_path,
-            '--problem', problem_path,
-            '--language', language,
-            '--checker', checker_path,
-            '--output', output_path
+        childProcess.execFile(judgerPath, [
+            '--sandbox', config.sandboxDirectory,
+            '--workdir', config.workingDirectory,
+            '--source', config.sourceName,
+            '--problem', config.problemDirectory,
+            '--type', config.type,
+            '--checker', config.checkerPath
         ], async (error, _stdout, _stderr) => {
             if (error) reject(error);
-            const result = yaml.parse(fs.readFileSync(path.join(output_path, 'result.yml'), { encoding: 'utf-8' }));
+            const resultPath = path.join(config.workingDirectory, 'result.yml');
+            const result = yaml.parse(fs.readFileSync(resultPath, { encoding: 'utf-8' }));
+            resolve(result);
+        });
+    });
+}
+
+function compileChecker(config) {
+    return new Promise((resolve, reject) => {
+        const judgerPath = path.join(__dirname, 'bin/hoj-judger');
+        
+        childProcess.execFile(judgerPath, [
+            '--sandbox', config.sandboxDirectory,
+            '--workdir', config.workingDirectory,
+            '--source', config.sourceName,
+            '--type', config.type,
+            '--compilechecker'
+        ], async (error, _stdout, _stderr) => {
+            if (error) reject(error);
+            const resultPath = path.join(config.workingDirectory, 'result.yml');
+            const result = yaml.parse(fs.readFileSync(resultPath, { encoding: 'utf-8' }));
             resolve(result);
         });
     });
@@ -73,4 +90,5 @@ module.exports = {
     TestCaseStatus,
     JudgeStatus,
     judge,
+    compileChecker
 };

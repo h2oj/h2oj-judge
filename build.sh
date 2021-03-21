@@ -10,12 +10,12 @@ if [ \
     git submodule update --init --recursive
 fi
 
-if [ ! -e "third_party/hoj-testlib/bin/noip" ]; then
-    cd third_party/hoj-testlib
-    if [ ! -d "bin" ]; then mkdir bin; fi
-    make
-    cd ../..
-fi
+#if [ ! -e "third_party/hoj-testlib/bin/noip" ]; then
+#    cd third_party/hoj-testlib
+#    if [ ! -d "bin" ]; then mkdir bin; fi
+#    make
+#    cd ../..
+#fi
 
 if [ ! -d "build" ]; then mkdir build; fi
 cd build
@@ -24,6 +24,4 @@ make
 cd ..
 
 if [ ! -d "node/bin" ]; then mkdir node/bin; fi
-cp third_party/hoj-testlib/bin/noip build/hoj-checker
 cp build/hoj-judger node/bin/hoj-judger
-cp build/hoj-checker node/bin/hoj-checker

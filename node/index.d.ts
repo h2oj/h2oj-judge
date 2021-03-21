@@ -42,29 +42,46 @@ declare enum JudgeStatus {
     UNKNOWN_ERROR = 5
 }
 
-declare class JudgerConfig {
-    code_path: string;
-    problem_path: string;
-    output_path: string;
-    language: string;
+declare class CommonConfig {
+    sandboxDirectory: string;
+    workingDirectory: string;
+    sourceName: string;
+    type: string;   
+}
+
+declare class CheckerConfig extends CommonConfig {}
+
+declare class JudgerConfig extends CommonConfig {
+    problemDirectory: string;
+    checkerPath: string;
 }
 
 declare class TestCaseResult {
     time: number;
-    space: number;
+    memory: number;
     score: number;
     status: TestCaseStatus;
 }
 
 declare class JudgeResult {
+    compile_time: number;
+    compile_mmeory: number;
     score: number;
-    space: number;
     time: number;
+    memory: number;
     status: JudgeStatus;
+    case_count: number;
     case: TestCaseResult[];
 }
 
+declare class CompileResult {
+    compile_time: number;
+    compile_mmeory: number;
+    status: JudgeStatus;
+}
+
 declare function judge(config: JudgerConfig): Promise<JudgeResult>;
+declare function compileChecker(config: CheckerConfig): Promise<CompileResult>;
 
 declare module 'hoj-judger' {
     export { TestCaseResult, JudgeResult, JudgerConfig, TestCaseStatus, JudgeStatus, judge };

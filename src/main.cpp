@@ -337,6 +337,14 @@ int judge_program(argparse::ArgumentParser &parser) {
                             break;
                         }
                     }
+
+                    // Output status
+                    std::cout << i + 1 << ','
+                        << judge_result["case"][i]["detail"] << ','
+                        << judge_result["case"][i]["score"] << ','
+                        << judge_result["case"][i]["status"] << ','
+                        << judge_result["case"][i]["time"] << ','
+                        << judge_result["case"][i]["memory"] << std::endl;
                 }
             }
         }

@@ -221,9 +221,6 @@ hoj::sandbox_result hoj::start_sandbox(const hoj::sandbox_param &param) {
     result.memory = read_cgroup_property<std::int32_t>(cgroup,
         "memory", "memory.memsw.max_usage_in_bytes");
 
-    std::cout << "[sandbox] memory: " << res_usage.ru_maxrss * 1024 << std::endl;
-    std::cout << "[sandbox] cpu_time: " << res_usage.ru_utime.tv_sec * 1000 + res_usage.ru_utime.tv_usec / 1000 << std::endl;
-
     remove_cgroup(cgroup);
 
     return result;

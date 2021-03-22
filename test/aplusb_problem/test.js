@@ -15,6 +15,8 @@ Judger.compileChecker({
         checkerPath: 'test/aplusb_problem/checker_workdir/binary/checker',
         sourceName: 'src.cpp',
         type: 'cpp98'
+    }, data => {
+        console.log(data);
     }).then(judgeResult => {
         console.log(judgeResult);
     });

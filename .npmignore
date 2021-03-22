@@ -3,9 +3,5 @@ src
 build
 .vscode
 third_party
+test
 hoj-judger-config.yml
-
-test/**/*.out
-test/**/result.yml
-test/**/compile.log
-test/**/exe

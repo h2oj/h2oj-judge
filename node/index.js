@@ -47,11 +47,11 @@ const JudgeStatus = {
     UNKNOWN_ERROR: 5
 };
 
-function judge(config) {
+function judge(config, onTestCaseFinished) {
     return new Promise((resolve, reject) => {
         const judgerPath = path.join(__dirname, 'bin/hoj-judger');
         
-        childProcess.execFile(judgerPath, [
+        const process = childProcess.execFile(judgerPath, [
             '--sandbox', config.sandboxDirectory,
             '--workdir', config.workingDirectory,
             '--source', config.sourceName,
@@ -63,6 +63,18 @@ function judge(config) {
             const resultPath = path.join(config.workingDirectory, 'result.yml');
             const result = yaml.parse(fs.readFileSync(resultPath, { encoding: 'utf-8' }));
             resolve(result);
+        });
+
+        process.stdout.on('data', data => {
+            const parsed = data.trim().split(',');
+            onTestCaseFinished({
+                id: parsed[0],
+                detail: parsed[1],
+                score: parsed[2],
+                status: parsed[3],
+                time: parsed[4],
+                memory: parsed[5]
+            });
         });
     });
 }

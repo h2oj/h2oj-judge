@@ -61,6 +61,7 @@ declare class TestCaseResult {
     memory: number;
     score: number;
     status: TestCaseStatus;
+    detail: string;
 }
 
 declare class JudgeResult {
@@ -72,6 +73,7 @@ declare class JudgeResult {
     status: JudgeStatus;
     case_count: number;
     case: TestCaseResult[];
+    detail: string;
 }
 
 declare class CompileResult {
@@ -80,7 +82,14 @@ declare class CompileResult {
     status: JudgeStatus;
 }
 
-declare function judge(config: JudgerConfig): Promise<JudgeResult>;
+declare class TestCaseData extends TestCaseResult {
+    id: number;
+}
+
+declare function judge(
+    config: JudgerConfig,
+    onTestCaseFinished: (data: TestCaseData) => void
+): Promise<JudgeResult>;
 declare function compileChecker(config: CheckerConfig): Promise<CompileResult>;
 
 declare module 'hoj-judger' {

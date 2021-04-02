@@ -110,4 +110,5 @@ node/bin
 # VSCode Config
 .vscode
 
-hoj-judger-config.yml
+h2oj-judge.yml
+/sandbox

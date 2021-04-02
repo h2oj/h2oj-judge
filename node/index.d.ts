@@ -1,5 +1,5 @@
 /*
-    This file is part of the Hydrogen OJ Judger.
+    This file is part of the h2oj-judge.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as published
@@ -92,6 +92,6 @@ declare function judge(
 ): Promise<JudgeResult>;
 declare function compileChecker(config: CheckerConfig): Promise<CompileResult>;
 
-declare module 'hoj-judger' {
+declare module 'h2oj-judge' {
     export { TestCaseResult, JudgeResult, JudgerConfig, TestCaseStatus, JudgeStatus, judge };
 };

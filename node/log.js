@@ -17,10 +17,34 @@
 
 /* Copyright (C) 2020-2021 Alex Cui */
 
-#ifndef _HOJ_JUDGER_DEF_H_
-#define _HOJ_JUDGER_DEF_H_
+const fs = require('fs');
 
-#define HOJ_VERSION_INT 0x000300
-#define HOJ_VERSION_STR "0.3.0"
+class Logger {
+    constructor() {
+        const fileName = `log/client_${this.getTime()}.log`;
+        this.fd = fs.openSync(fileName, 'w');
+    }
 
-#endif
+    getTime() {
+        return Number(new Date()).toString().replace(/(\d*)(\d{3})/, '$1.$2');
+    }
+
+    write(text) {
+        console.log(text);
+        return fs.writeSync(this.fd, text + '\n');
+    }
+
+    log(...params) {
+        this.write(`${this.getTime()} [log] ${params.join('')}`)
+    }
+
+    warn(...params) {
+        this.write(`${this.getTime()} [warning] ${params.join('')}`)
+    }
+
+    err(...params) {
+        this.write(`${this.getTime()} [error] ${params.join('')}`)
+    }
+}
+
+module.exports = Logger;

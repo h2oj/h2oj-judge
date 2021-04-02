@@ -1,5 +1,5 @@
 /*
-    This file is part of the Hydrogen OJ Judger.
+    This file is part of the h2oj-judge.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as published
@@ -49,7 +49,7 @@ const JudgeStatus = {
 
 function judge(config, onTestCaseFinished) {
     return new Promise((resolve, reject) => {
-        const judgerPath = path.join(__dirname, 'bin/hoj-judger');
+        const judgerPath = path.join(__dirname, 'bin/h2oj-judge');
         
         const process = childProcess.execFile(judgerPath, [
             '--sandbox', config.sandboxDirectory,
@@ -81,7 +81,7 @@ function judge(config, onTestCaseFinished) {
 
 function compileChecker(config) {
     return new Promise((resolve, reject) => {
-        const judgerPath = path.join(__dirname, 'bin/hoj-judger');
+        const judgerPath = path.join(__dirname, 'bin/h2oj-judge');
         
         childProcess.execFile(judgerPath, [
             '--sandbox', config.sandboxDirectory,

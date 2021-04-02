@@ -2,13 +2,7 @@
 
 set -o errexit
 
-if [ \
-    ! -d "third_party/hoj-testlib" -o \
-    ! -d "third_party/argparse" -o \
-    ! -d "third_party/yaml-cpp" \
-]; then
-    git submodule update --init --recursive
-fi
+git submodule update --init --recursive
 
 #if [ ! -e "third_party/hoj-testlib/bin/noip" ]; then
 #    cd third_party/hoj-testlib
@@ -24,4 +18,5 @@ make
 cd ..
 
 if [ ! -d "node/bin" ]; then mkdir node/bin; fi
-cp build/hoj-judger node/bin/hoj-judger
+rm node/bin/*
+cp build/h2oj-judge node/bin/h2oj-judge

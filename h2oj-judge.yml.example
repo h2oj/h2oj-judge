@@ -1,3 +1,6 @@
+server_url: 
+client_token: 
+cache_dir: cache
 language:
   cpp98:
     compile: "g++ \"%source\" -o \"%executable\" -DONLINE_JUDGE -DHOJ_JUDGER"
@@ -19,3 +22,6 @@ language:
     run: "\"%executable\""
   nodejs:
     run: "node \"%source\""
+checker:
+  testlib:
+    compile: "g++ \"%source\" -o \"%executable\" -DONLINE_JUDGE -DHOJ_JUDGER"

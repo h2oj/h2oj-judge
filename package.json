@@ -1,17 +1,20 @@
 {
-  "name": "hoj-judger",
-  "version": "0.3.0",
+  "name": "h2oj-judge",
+  "version": "0.4.0",
   "main": "node/index.js",
-  "repository": "git@github.com:hydrogen-oj/hoj-judger.git",
+  "repository": "git@github.com:hydrogen-oj/h2oj-judge.git",
   "author": "Hydrogen OJ Team",
   "license": "AGPL-3.0",
   "scripts": {
     "clean": "rimraf build && mkdirp build",
     "build": "./build.sh",
+    "client": "node ./node/client.js",
     "prepublishOnly": "./build.sh",
     "test": "node ./test/aplusb_problem/test.js"
   },
   "dependencies": {
+    "axios": "^0.21.1",
+    "ws": "^7.4.4",
     "yaml": "^1.10.0"
   },
   "devDependencies": {

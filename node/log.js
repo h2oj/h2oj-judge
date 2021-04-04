@@ -22,6 +22,9 @@ const fs = require('fs');
 class Logger {
     constructor() {
         const fileName = `log/client_${this.getTime()}.log`;
+        if (!fs.existsSync('log')) {
+            fs.mkdirSync('log');
+        }
         this.fd = fs.openSync(fileName, 'w');
     }
 

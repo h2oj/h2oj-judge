@@ -92,6 +92,6 @@ declare function judge(
 ): Promise<JudgeResult>;
 declare function compileChecker(config: CheckerConfig): Promise<CompileResult>;
 
-declare module 'h2oj-judge' {
+declare module '@h2oj/judge' {
     export { TestCaseResult, JudgeResult, JudgerConfig, TestCaseStatus, JudgeStatus, judge };
 };

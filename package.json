@@ -1,5 +1,5 @@
 {
-  "name": "h2oj-judge",
+  "name": "@h2oj/judge",
   "version": "0.4.0",
   "main": "node/index.js",
   "repository": "git@github.com:hydrogen-oj/h2oj-judge.git",
@@ -13,6 +13,7 @@
     "test": "node ./test/aplusb_problem/test.js"
   },
   "dependencies": {
+    "adm-zip": "^0.5.5",
     "axios": "^0.21.1",
     "ws": "^7.4.4",
     "yaml": "^1.10.0"

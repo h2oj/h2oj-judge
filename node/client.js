@@ -21,6 +21,7 @@ const WebSocket = require('ws');
 const yaml = require('yaml');
 const fs = require('fs');
 const path = require('path');
+const AdmZip = require('adm-zip');
 const axios = require('axios').default;
 const Logger = require('./log');
 const Judge = require('./index');
@@ -78,9 +79,9 @@ class JudgeClient {
         });
         this.ws.on('message', msg => {
             this.logger.log('Data Received: ', msg.toString());
-            const data = JSON.stringify(msg);
+            const data = JSON.parse(msg);
             if (data.event === 'judge') {
-                this.judge(data);
+                this.judge(data.data);
             }
         });
         this.ws.on('close', code => {
@@ -106,24 +107,39 @@ class JudgeClient {
     }
 
     async judge(data) {
-
+        await this.checkDataCache(data.problem_id.toString());
     }
 
     async fetchData(problemId) {
-        this.axios.get('judge/get_data');
+        this.logger.log('Fetching data: ', problemId);
+        const filePath = path.join(this.config.cache_dir, problemId);
+        const file = fs.createWriteStream(path.join(filePath, 'data.zip'));
+        const res = await this.axios.get('judge/get_data', {
+            responseType: 'stream',
+            params: {
+                problem_id: problemId
+            }
+        });
+        res.data.pipe(file);
+        file.on('finish', () => {
+            let zip = new AdmZip(path.join(filePath, 'data.zip'));
+            zip.extractAllTo(filePath, true);
+        });
     }
 
     async checkDataCache(problemId) {
         const cacheDir = path.join(this.config.cache_dir, problemId);
         if (!fs.existsSync(cacheDir)) {
-            fs.mkdirSync(cacheDir);
+            fs.mkdirSync(cacheDir, { recursive: true });
             fs.writeFileSync(path.join(cacheDir, 'last_sync'), '0');
+            await this.fetchData(problemId);
         }
         else {
             const lastSync = Number(fs.readFileSync(path.join(cacheDir, 'last_sync'), { encoding: 'utf-8' }));
             const lastUpdate = (await this.axios.get('judge/check_data', {
                 params: { problem_id: problemId }
             })).data.data.last_update;
+            this.logger.log('Data update time: ', lastUpdate, '/', lastSync);
             if (lastUpdate > lastSync) {
                 await this.fetchData(problemId);
             }

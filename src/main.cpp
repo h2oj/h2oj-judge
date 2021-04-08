@@ -93,7 +93,7 @@ int judge_program(argparse::ArgumentParser &parser) {
         return -1;
     }
 
-    const fs::path judger_config_path = "./hoj-judger-config.yml";
+    const fs::path judger_config_path = "./h2oj-judge.yml";
     const fs::path problem_path = parser.get<std::string>("problem");
     const fs::path problem_config_path = problem_path / "config.yml";
     const fs::path work_path = parser.get<std::string>("workdir");
@@ -337,16 +337,16 @@ int judge_program(argparse::ArgumentParser &parser) {
                             break;
                         }
                     }
-
-                    // Output status
-                    std::cout << i + 1 << ','
-                        << judge_result["case"][i]["detail"] << ','
-                        << judge_result["case"][i]["score"] << ','
-                        << judge_result["case"][i]["status"] << ','
-                        << judge_result["case"][i]["time"] << ','
-                        << judge_result["case"][i]["memory"] << std::endl;
                 }
             }
+
+            // Output status
+            std::cout << i + 1 << ','
+                << judge_result["case"][i]["detail"] << ','
+                << judge_result["case"][i]["score"] << ','
+                << judge_result["case"][i]["status"] << ','
+                << judge_result["case"][i]["time"] << ','
+                << judge_result["case"][i]["memory"] << std::endl;
         }
 
         judge_result["score"] = total_score;
@@ -361,7 +361,7 @@ int judge_program(argparse::ArgumentParser &parser) {
 }
 
 int compile_checker(argparse::ArgumentParser &parser) {
-    const fs::path judger_config_path = "./hoj-judger-config.yml";
+    const fs::path judger_config_path = "./h2oj-judge.yml";
     const fs::path work_path = parser.get<std::string>("workdir");
     const fs::path source_directory = work_path / "source";
     const fs::path binary_directory = work_path / "binary";

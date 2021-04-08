@@ -91,6 +91,8 @@ function compileChecker(config) {
             '--compilechecker'
         ], async (error, _stdout, _stderr) => {
             if (error) reject(error);
+            console.log(_stdout);
+            console.log(_stderr);
             const resultPath = path.join(config.workingDirectory, 'result.yml');
             const result = yaml.parse(fs.readFileSync(resultPath, { encoding: 'utf-8' }));
             resolve(result);

@@ -18,5 +18,4 @@ make
 cd ..
 
 if [ ! -d "node/bin" ]; then mkdir node/bin; fi
-rm node/bin/*
 cp build/h2oj-judge node/bin/h2oj-judge

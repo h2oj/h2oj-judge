@@ -20,6 +20,7 @@
 const WebSocket = require('ws');
 const yaml = require('yaml');
 const fs = require('fs');
+const process = require('process');
 const path = require('path');
 const AdmZip = require('adm-zip');
 const axios = require('axios').default;
@@ -39,6 +40,7 @@ class JudgeClient {
         this.token = '';
         this.logger = new Logger();
         this.taskId = 0;
+        this.interval = 0;
 
         const configPath = 'h2oj-judge.yml';
         this.config = yaml.parse(fs.readFileSync(configPath, { encoding: 'utf-8' }));
@@ -103,7 +105,7 @@ class JudgeClient {
             this.sendJSON({
                 token: this.config.client_token
             });
-            setInterval(() => {
+            this.interval = setInterval(() => {
                 this.sendJSON({
                     event: 'ping',
                     time: this.getTime()
@@ -129,11 +131,18 @@ class JudgeClient {
         });
         this.ws.on('close', code => {
             this.logger.log('Websocket disconneted: ', code);
+            this.exit();
         });
         this.ws.on('error', error => {
             this.logger.err('Websocket error: ', error);
         });
         this.logger.log('Connected.');
+    }
+
+    exit() {
+        if (this.interval) clearInterval(this.interval);
+        this.logger.close();
+        process.exit();
     }
 
     setupWorkingDirectory(dir_path, wk = true) {

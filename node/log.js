@@ -37,6 +37,10 @@ class Logger {
         return fs.writeSync(this.fd, text + '\n');
     }
 
+    close() {
+        fs.closeSync(this.fd);
+    }
+
     log(...params) {
         this.write(`${this.getTime()} [log] ${params.join('')}`)
     }
